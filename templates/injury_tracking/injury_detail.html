@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ injury.player.get_full_name }} - {{ injury.injury_type.name }} - Lancer Injury Tracking{% endblock %}
+{% block title %}{{ injury.player.get_full_name }} - {{ injury.injury_type.name }} - Lancer Injury Tracking{% endblock
+%}
 
 {% block content %}
 <div class="container-fluid">
@@ -12,7 +13,8 @@
         <div class="card-body">
           <div class="d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center">
-              <div class="avatar-lg bg-primary text-white rounded-circle me-3 d-flex align-items-center justify-content-center">
+              <div
+                class="avatar-lg bg-primary text-white rounded-circle me-3 d-flex align-items-center justify-content-center">
                 {{ injury.player.first_name|first|upper }}{{ injury.player.last_name|first|upper }}
               </div>
               <div>
@@ -22,10 +24,12 @@
               </div>
             </div>
             <div class="d-flex align-items-center">
-              <span class="badge me-2" style="background-color: {{ injury.severity.color_code }}; color: white; font-size: 1rem; padding: 0.5rem 1rem;">
+              <span class="badge me-2"
+                style="background-color: {{ injury.severity.color_code }}; color: white; font-size: 1rem; padding: 0.5rem 1rem;">
                 {{ injury.severity.name }}
               </span>
-              <span class="status-badge status-{{ injury.status|lower }}" style="font-size: 1rem; padding: 0.5rem 1rem;">
+              <span class="status-badge status-{{ injury.status|lower }}"
+                style="font-size: 1rem; padding: 0.5rem 1rem;">
                 {{ injury.get_status_display }}
               </span>
             </div>
@@ -51,12 +55,12 @@
               <h6 class="text-muted">Injury Information</h6>
               <p><strong>Type:</strong> {{ injury.injury_type.name }}</p>
               <p><strong>Body Part:</strong> {{ injury.body_part.name }}</p>
-              <p><strong>Severity:</strong> 
+              <p><strong>Severity:</strong>
                 <span class="badge" style="background-color: {{ injury.severity.color_code }}; color: white;">
                   {{ injury.severity.name }}
                 </span>
               </p>
-              <p><strong>Status:</strong> 
+              <p><strong>Status:</strong>
                 <span class="status-badge status-{{ injury.status|lower }}">
                   {{ injury.get_status_display }}
                 </span>
@@ -68,7 +72,7 @@
               <p><strong>Reported Date:</strong> {{ injury.reported_date|date:"F d, Y" }}</p>
               <p><strong>Days Since Injury:</strong> {{ injury.days_since_injury }} days</p>
               {% if injury.return_to_play_date %}
-                <p><strong>Return to Play:</strong> {{ injury.return_to_play_date|date:"F d, Y" }}</p>
+              <p><strong>Return to Play:</strong> {{ injury.return_to_play_date|date:"F d, Y" }}</p>
               {% endif %}
             </div>
           </div>
@@ -85,7 +89,7 @@
         <div class="card-body">
           <h6 class="text-muted">Description</h6>
           <p>{{ injury.description|linebreaks }}</p>
-          
+
           {% if injury.symptoms %}
           <h6 class="text-muted mt-3">Symptoms</h6>
           <p>{{ injury.symptoms|linebreaks }}</p>
@@ -106,50 +110,87 @@
               <h6 class="text-muted">Treatment Details</h6>
               <p><strong>Treatment Type:</strong> {{ injury.get_treatment_display }}</p>
               {% if injury.requires_surgery %}
-                <p><strong>Surgery Required:</strong> 
-                  <span class="badge bg-danger">Yes</span>
-                  {% if injury.surgery_date %}
-                    <br><strong>Surgery Date:</strong> {{ injury.surgery_date|date:"F d, Y" }}
-                  {% endif %}
-                </p>
+              <p><strong>Surgery Required:</strong>
+                <span class="badge bg-danger">Yes</span>
+                {% if injury.surgery_date %}
+                <br><strong>Surgery Date:</strong> {{ injury.surgery_date|date:"F d, Y" }}
+                {% endif %}
+              </p>
               {% endif %}
               {% if injury.medical_clearance %}
-                <p><strong>Medical Clearance:</strong> 
-                  <span class="badge bg-success">Cleared</span>
-                  {% if injury.clearance_date %}
-                    <br><strong>Clearance Date:</strong> {{ injury.clearance_date|date:"F d, Y" }}
-                  {% endif %}
-                </p>
+              <p><strong>Medical Clearance:</strong>
+                <span class="badge bg-success">Cleared</span>
+                {% if injury.clearance_date %}
+                <br><strong>Clearance Date:</strong> {{ injury.clearance_date|date:"F d, Y" }}
+                {% endif %}
+              </p>
               {% endif %}
             </div>
             <div class="col-md-6">
               <h6 class="text-muted">Recovery Timeline</h6>
               {% if injury.estimated_recovery_time %}
-                <p><strong>Estimated Recovery:</strong> {{ injury.estimated_recovery_time }} days</p>
+              <p><strong>Estimated Recovery:</strong> {{ injury.estimated_recovery_time }} days</p>
               {% endif %}
               {% if injury.actual_recovery_time %}
-                <p><strong>Actual Recovery:</strong> {{ injury.actual_recovery_time }} days</p>
+              <p><strong>Actual Recovery:</strong> {{ injury.actual_recovery_time }} days</p>
               {% endif %}
               {% if injury.follow_up_required %}
-                <p><strong>Follow-up Required:</strong> 
-                  <span class="badge bg-warning">Yes</span>
-                  {% if injury.follow_up_date %}
-                    <br><strong>Follow-up Date:</strong> {{ injury.follow_up_date|date:"F d, Y" }}
-                  {% endif %}
-                </p>
+              <p><strong>Follow-up Required:</strong>
+                <span class="badge bg-warning">Yes</span>
+                {% if injury.follow_up_date %}
+                <br><strong>Follow-up Date:</strong> {{ injury.follow_up_date|date:"F d, Y" }}
+                {% endif %}
+              </p>
               {% endif %}
             </div>
           </div>
-          
+
           {% if injury.treatment_notes %}
           <h6 class="text-muted mt-3">Treatment Notes</h6>
           <p>{{ injury.treatment_notes|linebreaks }}</p>
           {% endif %}
-          
+
           {% if injury.follow_up_notes %}
           <h6 class="text-muted mt-3">Follow-up Notes</h6>
           <p>{{ injury.follow_up_notes|linebreaks }}</p>
           {% endif %}
+        </div>
+      </div>
+
+      <!-- Injury Classification -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0">
+            <i class="bi bi-tags me-2"></i>Injury Classification
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <h6 class="text-muted">Contact Type</h6>
+              {% if injury.contact_type == 'CONTACT' %}
+              <span class="badge bg-danger">Contact</span>
+              {% elif injury.contact_type == 'NON_CONTACT' %}
+              <span class="badge bg-info text-dark">Non-Contact</span>
+              {% else %}
+              <span class="badge bg-secondary">Unknown</span>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              <h6 class="text-muted">Missed Games</h6>
+              <p class="mb-0">
+                <strong>{{ injury.missed_games }}</strong>
+                <span class="text-muted ms-1">game{{ injury.missed_games|pluralize }}</span>
+              </p>
+            </div>
+            <div class="col-md-4">
+              <h6 class="text-muted">Missed Practices</h6>
+              <p class="mb-0">
+                <strong>{{ injury.missed_practices }}</strong>
+                <span class="text-muted ms-1">practice{{ injury.missed_practices|pluralize }}</span>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -194,25 +235,26 @@
         </div>
         <div class="card-body">
           <div class="text-center mb-3">
-            <div class="avatar-lg bg-primary text-white rounded-circle mx-auto d-flex align-items-center justify-content-center mb-2">
+            <div
+              class="avatar-lg bg-primary text-white rounded-circle mx-auto d-flex align-items-center justify-content-center mb-2">
               {{ injury.player.first_name|first|upper }}{{ injury.player.last_name|first|upper }}
             </div>
             <h5>{{ injury.player.get_full_name }}</h5>
             <p class="text-muted">{{ injury.player.team.name }}</p>
           </div>
-          
+
           {% if injury.player.playerprofile %}
-            {% if injury.player.playerprofile.position %}
-              <p><strong>Position:</strong> {{ injury.player.playerprofile.position }}</p>
-            {% endif %}
-            {% if injury.player.playerprofile.number %}
-              <p><strong>Jersey Number:</strong> #{{ injury.player.playerprofile.number }}</p>
-            {% endif %}
-            {% if injury.player.playerprofile.dob %}
-              <p><strong>Date of Birth:</strong> {{ injury.player.playerprofile.dob|date:"F d, Y" }}</p>
-            {% endif %}
+          {% if injury.player.playerprofile.position %}
+          <p><strong>Position:</strong> {{ injury.player.playerprofile.position }}</p>
           {% endif %}
-          
+          {% if injury.player.playerprofile.number %}
+          <p><strong>Jersey Number:</strong> #{{ injury.player.playerprofile.number }}</p>
+          {% endif %}
+          {% if injury.player.playerprofile.dob %}
+          <p><strong>Date of Birth:</strong> {{ injury.player.playerprofile.dob|date:"F d, Y" }}</p>
+          {% endif %}
+          {% endif %}
+
           <hr>
           <h6 class="text-muted">Contact Information</h6>
           <p><strong>Email:</strong> {{ injury.player.email }}</p>
@@ -228,7 +270,8 @@
         </div>
         <div class="card-body">
           <div class="d-flex align-items-center">
-            <div class="avatar-sm bg-secondary text-white rounded-circle me-3 d-flex align-items-center justify-content-center">
+            <div
+              class="avatar-sm bg-secondary text-white rounded-circle me-3 d-flex align-items-center justify-content-center">
               {{ injury.reported_by.first_name|first|upper }}{{ injury.reported_by.last_name|first|upper }}
             </div>
             <div>
@@ -257,11 +300,12 @@
             <a href="{% url 'tracking:injury_update' injury.pk %}" class="btn btn-warning">
               <i class="bi bi-pencil me-2"></i>Update Injury
             </a>
-            
+
             {% if injury.status != 'RECOVERED' %}
             <form method="post" action="{% url 'tracking:mark_as_recovered' injury.pk %}" style="display: inline;">
               {% csrf_token %}
-              <button type="submit" class="btn btn-success w-100" onclick="return confirm('Mark this injury as recovered with medical clearance?');">
+              <button type="submit" class="btn btn-success w-100"
+                onclick="return confirm('Mark this injury as recovered with medical clearance?');">
                 <i class="bi bi-check-circle me-2"></i>Mark as Recovered
               </button>
             </form>
@@ -270,19 +314,20 @@
               <i class="bi bi-check-circle me-2"></i>Already Recovered
             </button>
             {% endif %}
-            
+
             <form method="post" action="{% url 'tracking:delete_injury' injury.pk %}" style="display: inline;">
               {% csrf_token %}
-              <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Are you sure you want to delete this injury record? This action cannot be undone.');">
+              <button type="submit" class="btn btn-danger w-100"
+                onclick="return confirm('Are you sure you want to delete this injury record? This action cannot be undone.');">
                 <i class="bi bi-trash me-2"></i>Delete Injury
               </button>
             </form>
             {% endif %}
-            
+
             <a href="{% url 'tracking:injury_list' %}" class="btn btn-outline-primary">
               <i class="bi bi-arrow-left me-2"></i>Back to List
             </a>
-            
+
             {% if user.role == 'ADMIN' %}
             <a href="/admin/injury_tracking/injuryrecord/{{ injury.pk }}/change/" class="btn btn-outline-secondary">
               <i class="bi bi-gear me-2"></i>Admin Edit
@@ -319,34 +364,34 @@
     font-size: 0.875rem;
     font-weight: 500;
   }
-  
+
   .status-active {
     background-color: #fef3c7;
     color: #92400e;
   }
-  
+
   .status-recovering {
     background-color: #dbeafe;
     color: #1e40af;
   }
-  
+
   .status-recovered {
     background-color: #d1fae5;
     color: #065f46;
   }
-  
+
   .status-chronic {
     background-color: #fee2e2;
     color: #991b1b;
   }
-  
+
   .avatar-lg {
     width: 80px;
     height: 80px;
     font-size: 2rem;
     font-weight: 600;
   }
-  
+
   .avatar-sm {
     width: 40px;
     height: 40px;

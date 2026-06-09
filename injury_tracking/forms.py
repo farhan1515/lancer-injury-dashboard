@@ -16,6 +16,7 @@ class InjuryReportForm(forms.ModelForm):
             'player', 'injury_date', 'injury_type', 'body_part', 'severity',
             'description', 'symptoms', 'treatment', 'treatment_notes',
             'estimated_recovery_time', 'requires_surgery', 'surgery_date',
+            'contact_type', 'missed_games', 'missed_practices',
             'follow_up_required', 'follow_up_date', 'follow_up_notes',
             'is_confidential'
         ]
@@ -34,6 +35,9 @@ class InjuryReportForm(forms.ModelForm):
             'treatment': forms.Select(attrs={'class': 'form-control'}),
             'estimated_recovery_time': forms.NumberInput(attrs={'class': 'form-control'}),
             'requires_surgery': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'contact_type': forms.Select(attrs={'class': 'form-control'}),
+            'missed_games': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'missed_practices': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'follow_up_required': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_confidential': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

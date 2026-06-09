@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 
 User = get_user_model()
@@ -70,7 +69,13 @@ class InjuryRecord(models.Model):
         ('MEDICATION', 'Medication'),
         ('OTHER', 'Other'),
     ]
-    
+
+    CONTACT_CHOICES = [
+        ('CONTACT', 'Contact'),
+        ('NON_CONTACT', 'Non-Contact'),
+        ('UNKNOWN', 'Unknown'),
+    ]
+
     # Basic Information
     player = models.ForeignKey(User, on_delete=models.CASCADE, related_name='injuries')
     reported_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reported_injuries')
@@ -110,7 +115,23 @@ class InjuryRecord(models.Model):
     follow_up_required = models.BooleanField(default=False)
     follow_up_date = models.DateField(null=True, blank=True)
     follow_up_notes = models.TextField(blank=True)
-    
+
+    # Injury Classification
+    contact_type = models.CharField(
+        max_length=20,
+        choices=CONTACT_CHOICES,
+        default='UNKNOWN',
+        help_text="Whether the injury was caused by contact with another player"
+    )
+    missed_games = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of games missed due to this injury"
+    )
+    missed_practices = models.PositiveIntegerField(
+        default=0,
+        help_text="Number of practices missed due to this injury"
+    )
+
     # Metadata
     is_confidential = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
