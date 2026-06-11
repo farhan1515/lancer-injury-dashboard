@@ -4,341 +4,960 @@
 {% block title %}My Dashboard - Lancer Injury Tracking{% endblock %}
 
 {% block content %}
-  <!-- Header -->
-  <div class="row mb-3 mb-md-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="widget-icon primary me-3 flex-shrink-0">
-              <i class="bi bi-person-fill"></i>
-            </div>
-            <div class="flex-grow-1">
-              <h1 class="card-title mb-1">My Dashboard</h1>
-              <p class="text-muted mb-0">Welcome back, {{ user.get_full_name }}!</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<div class="container-fluid pb-5 player-dashboard" id="playerDash">
 
-  <!-- Personal Stats -->
-  <div class="row mb-3 mb-md-4">
-    <div class="col-lg-3 col-md-6 mb-3">
-      <div class="widget">
-        <div class="d-flex align-items-center">
-          <div class="widget-icon primary me-3 flex-shrink-0">
-            <i class="bi bi-clipboard-data"></i>
-          </div>
-          <div class="flex-grow-1">
-            <h3 class="mb-1">{{ total_injuries }}</h3>
-            <p class="text-muted mb-0">Total Injuries</p>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="col-lg-3 col-md-6 mb-3">
-      <div class="widget">
-        <div class="d-flex align-items-center">
-          <div class="widget-icon warning me-3 flex-shrink-0">
-            <i class="bi bi-exclamation-triangle"></i>
-          </div>
-          <div class="flex-grow-1">
-            <h3 class="mb-1">{{ active_injuries|length }}</h3>
-            <p class="text-muted mb-0">Active Injuries</p>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="col-lg-3 col-md-6 mb-3">
-      <div class="widget">
-        <div class="d-flex align-items-center">
-          <div class="widget-icon success me-3 flex-shrink-0">
-            <i class="bi bi-check-circle"></i>
-          </div>
-          <div class="flex-grow-1">
-            <h3 class="mb-1">{{ avg_recovery_time|floatformat:0|default:"0" }}</h3>
-            <p class="text-muted mb-0">Avg Recovery (days)</p>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="col-lg-3 col-md-6 mb-3">
-      <div class="widget">
-        <div class="d-flex align-items-center">
-          <div class="widget-icon info me-3 flex-shrink-0">
-            <i class="bi bi-heart-pulse"></i>
-          </div>
-          <div class="flex-grow-1">
-            <h3 class="mb-1">
-              {% if active_injuries %}
-                <span class="text-warning">Injured</span>
-              {% else %}
-                <span class="text-success">Healthy</span>
-              {% endif %}
-            </h3>
-            <p class="text-muted mb-0">Current Status</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  {# ============ DESKTOP TWO-COLUMN LAYOUT ============ #}
+  <div class="row gx-3 player-row">
 
-  <!-- Current Status -->
-  {% if active_injuries %}
-  <div class="row mb-3 mb-md-4">
-    <div class="col-12">
-      <div class="card border-warning">
-        <div class="card-header bg-warning text-dark">
-          <h5 class="card-title mb-0">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>Current Active Injuries
-          </h5>
+    <div class="col-lg-8">
+
+  {# ============ TAB CONTENT ============ #}
+  <div id="tab-home" class="player-tab" data-tab="home">
+
+    {# Greeting card — top of left column on desktop, hidden on mobile #}
+    <div class="card mb-3 d-none d-md-block">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center">
+          <div class="widget-icon primary me-3"><i class="bi bi-person-circle"></i></div>
+          <div>
+            <h1 class="card-title mb-1">Hi, {{ request.user.first_name|default:request.user.username }}</h1>
+            <p class="text-muted mb-0">Your personal injury &amp; wellness hub</p>
+          </div>
         </div>
-        <div class="card-body">
-          {% for injury in active_injuries %}
-          <div class="alert alert-warning mb-3">
-            <div class="row">
-              <div class="col-md-8">
-                <h6 class="alert-heading">
-                  <i class="bi bi-activity me-2"></i>{{ injury.injury_type.name }}
-                </h6>
-                <p class="mb-2">
-                  <strong>Body Part:</strong> {{ injury.body_part.name }}<br>
-                  <strong>Severity:</strong> 
-                  <span class="badge" style="background-color: {{ injury.severity.color_code }}; color: white;">
-                    {{ injury.severity.name }}
-                  </span><br>
-                  <strong>Injury Date:</strong> {{ injury.injury_date|date:"F d, Y" }}<br>
-                  <strong>Days Since Injury:</strong> {{ injury.days_since_injury }} days
-                </p>
-                {% if injury.description %}
-                  <p class="mb-2"><strong>Description:</strong> {{ injury.description }}</p>
-                {% endif %}
-                {% if injury.treatment_notes %}
-                  <p class="mb-0"><strong>Treatment Notes:</strong> {{ injury.treatment_notes }}</p>
-                {% endif %}
+        <div class="d-flex align-items-center gap-2">
+          <a href="{% url 'player_calendar' %}" class="btn btn-outline-primary">
+            <i class="bi bi-calendar3 me-1"></i>Calendar
+          </a>
+          <div class="dropdown" id="bellWrap">
+            <button type="button" class="btn btn-outline-secondary position-relative"
+                    id="bellDesktop" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+              <i class="bi bi-bell"></i>
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {% if not unread_notifications %}d-none{% endif %}"
+                    id="bellBadge">{{ unread_notifications|default:0 }}</span>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end p-0" style="width: 340px; max-width: 90vw;">
+              <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+                <span class="fw-semibold small">Notifications</span>
+                <button type="button" class="btn btn-link btn-sm p-0 small" id="markAllRead">Mark all read</button>
               </div>
-              <div class="col-md-4 text-end">
-                <div class="mb-2">
-                  <span class="status-badge status-{{ injury.status|lower }}">
-                    {{ injury.get_status_display }}
-                  </span>
-                </div>
-                {% if injury.estimated_recovery_time %}
-                  <small class="text-muted">
-                    Est. Recovery: {{ injury.estimated_recovery_time }} days
-                  </small>
-                {% endif %}
-                {% if injury.follow_up_date %}
-                  <br><small class="text-info">
-                    Next Follow-up: {{ injury.follow_up_date|date:"M d, Y" }}
-                  </small>
-                {% endif %}
+              <div id="notifList" style="max-height: 360px; overflow-y: auto;">
+                <p class="text-muted small text-center py-3 mb-0">Loading…</p>
               </div>
             </div>
           </div>
-          {% endfor %}
         </div>
       </div>
     </div>
-  </div>
-  {% else %}
-  <div class="row mb-3 mb-md-4">
-    <div class="col-12">
-      <div class="card border-success">
-        <div class="card-header bg-success text-white">
-          <h5 class="card-title mb-0">
-            <i class="bi bi-check-circle-fill me-2"></i>Health Status
-          </h5>
-        </div>
-        <div class="card-body text-center">
-          <i class="bi bi-heart-pulse text-success" style="font-size: 4rem;"></i>
-          <h4 class="text-success mt-3">You're Healthy!</h4>
-          <p class="text-muted">No active injuries. Keep up the great work!</p>
-        </div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Injury History -->
-  <div class="row mb-3 mb-md-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="card-title mb-0">
-            <i class="bi bi-clock-history me-2"></i>My Injury History
-          </h5>
-          <span class="badge bg-primary">{{ injuries|length }} Total</span>
-        </div>
-        <div class="card-body">
-          {% if injuries %}
-            <div class="table-responsive">
-              <table class="table table-hover">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Injury Type</th>
-                    <th>Body Part</th>
-                    <th>Severity</th>
-                    <th>Status</th>
-                    <th>Recovery Time</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for injury in injuries %}
-                  <tr>
-                    <td>{{ injury.injury_date|date:"M d, Y" }}</td>
-                    <td>{{ injury.injury_type.name }}</td>
-                    <td>{{ injury.body_part.name }}</td>
-                    <td>
-                      <span class="badge" style="background-color: {{ injury.severity.color_code }}; color: white;">
-                        {{ injury.severity.name }}
-                      </span>
-                    </td>
-                    <td>
-                      <span class="status-badge status-{{ injury.status|lower }}">
-                        {{ injury.get_status_display }}
-                      </span>
-                    </td>
-                    <td>
-                      {% if injury.actual_recovery_time %}
-                        {{ injury.actual_recovery_time }} days
-                      {% elif injury.estimated_recovery_time %}
-                        <span class="text-muted">Est: {{ injury.estimated_recovery_time }} days</span>
-                      {% else %}
-                        <span class="text-muted">-</span>
-                      {% endif %}
-                    </td>
-                    <td>
-                      <a href="{% url 'tracking:injury_detail' injury.pk %}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-eye me-1"></i>View Details
-                      </a>
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          {% else %}
-            <div class="text-center py-4">
-              <i class="bi bi-clipboard-data text-muted" style="font-size: 3rem;"></i>
-              <p class="text-muted mt-2">No injury history found</p>
-            </div>
+      {# ============ CLEARANCE STATUS WIDGET ============ #}
+    {% if clearance %}
+    <div class="clearance-card mb-3"
+         style="border-left: 6px solid {{ clearance.border_color }};
+                background: {{ clearance.bg_color }};">
+      <div class="d-flex flex-column flex-md-row align-items-md-center text-center text-md-start gap-3">
+        <i class="bi {{ clearance.icon }}" style="font-size: 48px; color: {{ clearance.icon_color }};"></i>
+        <div class="flex-grow-1">
+          <h3 class="mb-1 fw-bold">{{ clearance.title }}</h3>
+          <p class="mb-1">{{ clearance.subtitle }}</p>
+          {% if clearance.clearance_date %}
+            <small class="text-muted">Cleared on {{ clearance.clearance_date|date:"M d, Y" }}</small>
+          {% endif %}
+          {% if clearance.foot_note %}
+            <small class="text-muted d-block">{{ clearance.foot_note }}</small>
           {% endif %}
         </div>
       </div>
     </div>
-  </div>
+    {% endif %}
 
-  <!-- Recovery Progress -->
-  {% if active_injuries %}
-  <div class="row mb-3 mb-md-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="card-title mb-0">
-            <i class="bi bi-graph-up me-2"></i>Recovery Progress
-          </h5>
-        </div>
-        <div class="card-body">
-          {% for injury in active_injuries %}
-          <div class="mb-4">
-            <h6>{{ injury.injury_type.name }} - {{ injury.body_part.name }}</h6>
-            <div class="progress mb-2" style="height: 8px;">
-              {% if injury.estimated_recovery_time %}
-                {% widthratio injury.days_since_injury injury.estimated_recovery_time 100 as progress_percent %}
-                <div class="progress-bar bg-warning" role="progressbar" 
-                     style="width: {% if progress_percent > 100 %}100{% else %}{{ progress_percent }}{% endif %}%">
+    {# ============ SEASON MINI STATS ============ #}
+    <div class="row g-2 mb-3">
+      <div class="col-4">
+        <div class="card mini-stat h-100">
+          <div class="card-body py-2 px-3">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <div class="mini-stat-label">Games Missed</div>
+                <div class="mini-stat-value"
+                     style="color: {% if total_missed_games > 0 %}#ef4444{% else %}#10b981{% endif %};">
+                  {{ total_missed_games }}
                 </div>
-              {% else %}
-                <div class="progress-bar bg-info" role="progressbar" style="width: 50%"></div>
-              {% endif %}
+              </div>
+              <i class="bi bi-controller mini-stat-icon"
+                 style="color: {% if total_missed_games > 0 %}#ef4444{% else %}#10b981{% endif %};"></i>
             </div>
-            <small class="text-muted">
-              {{ injury.days_since_injury }} days since injury
-              {% if injury.estimated_recovery_time %}
-                ({{ injury.estimated_recovery_time }} days estimated)
-              {% endif %}
-            </small>
           </div>
-          {% endfor %}
         </div>
       </div>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Quick Actions -->
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="card-title mb-0">
-            <i class="bi bi-lightning-fill me-2"></i>Quick Actions
-          </h5>
+      <div class="col-4">
+        <div class="card mini-stat h-100">
+          <div class="card-body py-2 px-3">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <div class="mini-stat-label">Practices Missed</div>
+                <div class="mini-stat-value"
+                     style="color: {% if total_missed_practices > 0 %}#f59e0b{% else %}#10b981{% endif %};">
+                  {{ total_missed_practices }}
+                </div>
+              </div>
+              <i class="bi bi-megaphone mini-stat-icon"
+                 style="color: {% if total_missed_practices > 0 %}#f59e0b{% else %}#10b981{% endif %};"></i>
+            </div>
+          </div>
         </div>
-        <div class="card-body">
-          <div class="row">
-            <div class="col-lg-3 col-md-6 mb-3">
-              <a href="{% url 'profile' %}" class="btn btn-primary w-100">
-                <i class="bi bi-person me-2"></i>Update Profile
-              </a>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-              <a href="{% url 'tracking:injury_list' %}" class="btn btn-info w-100">
-                <i class="bi bi-clipboard-data me-2"></i>View All Injuries
-              </a>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-              <a href="{% url 'tracking:analytics' %}" class="btn btn-warning w-100">
-                <i class="bi bi-graph-up me-2"></i>My Analytics
-              </a>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-              <a href="{% url 'logout' %}" class="btn btn-outline-secondary w-100">
-                <i class="bi bi-box-arrow-right me-2"></i>Logout
-              </a>
+      </div>
+      <div class="col-4">
+        <div class="card mini-stat h-100">
+          <div class="card-body py-2 px-3">
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <div class="mini-stat-label">Recovery Days</div>
+                <div class="mini-stat-value" style="color: #0b76ef;">
+                  {% if active_recovery_days > 0 %}{{ active_recovery_days }}{% else %}—{% endif %}
+                </div>
+              </div>
+              <i class="bi bi-clock-history mini-stat-icon" style="color: #0b76ef;"></i>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-{% endblock %}
 
-{% block scripts %}
+  {# ----- Injury Status Widget ----- #}
+    {% with worst='ok' %}
+      {% if current_injuries %}
+        {% for inj in current_injuries %}
+          {% if inj.status == 'ACTIVE' %}{% with worst='active' %}{% endwith %}{% endif %}
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if not current_injuries %}
+      <div class="card status-card status-ok mb-3">
+        <div class="card-body d-flex align-items-center">
+          <i class="bi bi-shield-check fs-1 text-success me-3"></i>
+          <div>
+            <h4 class="mb-1">All Clear</h4>
+            <p class="text-muted mb-0">No injuries on record. Stay safe out there.</p>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      {# pick worst border color: any active=red, else any recovering=yellow, else green #}
+      {% with border_class='border-recovering' %}
+        {% for inj in current_injuries %}
+          {% if inj.status == 'ACTIVE' %}{% with border_class='border-active' %}{% endwith %}{% endif %}
+        {% endfor %}
+        {% for inj in current_injuries %}
+          <div class="card status-card mb-2
+            {% if inj.status == 'ACTIVE' %}border-active{% elif inj.status == 'RECOVERING' %}border-recovering{% else %}border-recovered{% endif %}">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <h5 class="mb-1">{{ inj.body_part.name }} — {{ inj.injury_type.name }}</h5>
+                  <p class="text-muted mb-1 small">{{ inj.days_since_injury }} day{{ inj.days_since_injury|pluralize }} since injury</p>
+                  {% if inj.treatment_notes %}
+                    <p class="mb-0 small"><strong>Notes:</strong> {{ inj.treatment_notes|truncatechars:120 }}</p>
+                  {% endif %}
+                </div>
+                <span class="status-pill
+                  {% if inj.status == 'ACTIVE' %}pill-active{% elif inj.status == 'RECOVERING' %}pill-recovering{% else %}pill-recovered{% endif %}">
+                  {{ inj.get_status_display }}
+                </span>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% endwith %}
+    {% endif %}
+
+    {# ----- Quick Actions ----- #}
+    <div class="row g-2 mb-3">
+      <div class="col-6">
+        <button type="button" class="btn btn-primary w-100 py-3"
+                data-bs-toggle="modal" data-bs-target="#reportInjuryModal">
+          <i class="bi bi-plus-circle me-1"></i>Report Injury
+        </button>
+      </div>
+      <div class="col-6">
+        <button type="button" class="btn btn-outline-primary w-100 py-3"
+                data-bs-toggle="modal" data-bs-target="#requestAppointmentModal">
+          <i class="bi bi-calendar-plus me-1"></i>Request Appointment
+        </button>
+      </div>
+    </div>
+
+    {# ----- Upcoming Appointments (next 2) — mobile-only summary; full list lives in right column on desktop ----- #}
+    <div class="card mb-3 d-lg-none">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Upcoming Appointments</h6>
+        <a href="#" class="small" onclick="switchTab('appointments');return false;">View all</a>
+      </div>
+      <div class="card-body">
+        {% for a in upcoming_appointments|slice:":2" %}
+          <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
+            <div>
+              <div class="fw-semibold">{{ a.preferred_date|date:"M d, Y" }}</div>
+              <small class="text-muted">{{ a.get_preferred_time_slot_display }}{% if a.therapist %} — {{ a.therapist.get_full_name }}{% endif %}</small>
+            </div>
+            <span class="status-pill
+              {% if a.status == 'CONFIRMED' %}pill-recovered{% elif a.status == 'CANCELLED' %}pill-active{% else %}pill-recovering{% endif %}">
+              {{ a.get_status_display }}
+            </span>
+          </div>
+        {% empty %}
+          <p class="text-muted small mb-0">No upcoming appointments.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# ----- Upcoming Events (next 3) — mobile-only summary; full list lives in right column on desktop ----- #}
+    <div class="card mb-3 d-lg-none">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-calendar3 me-2"></i>Upcoming Events</h6>
+        <a href="#" class="small" onclick="switchTab('events');return false;">View all</a>
+      </div>
+      <div class="card-body">
+        {% for ev in upcoming_events|slice:":3" %}
+          <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
+            <div>
+              <div class="fw-semibold">{{ ev.title }}</div>
+              <small class="text-muted">
+                {{ ev.start_datetime|date:"M d, Y g:i A" }}{% if ev.location %} · {{ ev.location }}{% endif %}
+              </small>
+            </div>
+            <span class="badge bg-secondary">{{ ev.get_event_type_display }}</span>
+          </div>
+        {% empty %}
+          <p class="text-muted small mb-0">No upcoming events.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {# ============ INJURIES TAB ============ #}
+  <div id="tab-injuries" class="player-tab" data-tab="injuries" style="display:none;">
+    <h6 class="text-muted fw-semibold mb-3"><i class="bi bi-clock-history me-1"></i>Injury Timeline</h6>
+    {% if all_injuries %}
+      <div class="injury-timeline">
+        {% for inj in all_injuries %}
+          <div class="timeline-item
+            {% if inj.status == 'ACTIVE' %}border-active{% elif inj.status == 'RECOVERING' %}border-recovering{% else %}border-recovered{% endif %}">
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div>
+                    <div class="text-muted small">{{ inj.injury_date|date:"M d, Y" }}</div>
+                    <h6 class="mb-1 fw-bold">{{ inj.injury_type.name }} — {{ inj.body_part.name }}</h6>
+                  </div>
+                  <div class="text-end">
+                    <span class="status-pill
+                      {% if inj.status == 'ACTIVE' %}pill-active{% elif inj.status == 'RECOVERING' %}pill-recovering{% else %}pill-recovered{% endif %}">
+                      {{ inj.get_status_display }}
+                    </span>
+                    <br>
+                    <span class="badge mt-1" style="background-color: {{ inj.severity.color_code }}; color:#fff;">
+                      {{ inj.severity.name }}
+                    </span>
+                  </div>
+                </div>
+                <div class="small">
+                  {% if inj.reported_by %}
+                    <div><i class="bi bi-person me-1"></i>Reported by {{ inj.reported_by.get_full_name|default:inj.reported_by.username }}</div>
+                  {% endif %}
+                  {% if inj.treatment %}<div><i class="bi bi-bandaid me-1"></i>Treatment: {{ inj.get_treatment_display }}</div>{% endif %}
+                  {% if inj.estimated_recovery_time %}<div><i class="bi bi-clock me-1"></i>Est. recovery: {{ inj.estimated_recovery_time }} days</div>{% endif %}
+                  {% if inj.actual_recovery_time %}<div><i class="bi bi-check-circle me-1"></i>Actual recovery: {{ inj.actual_recovery_time }} days</div>{% endif %}
+                  {% if inj.clearance_date %}<div><i class="bi bi-shield-check me-1"></i>Cleared: {{ inj.clearance_date|date:"M d, Y" }}</div>{% endif %}
+                </div>
+                {% if inj.description or inj.treatment_notes %}
+                  <button class="btn btn-sm btn-link p-0 mt-2" data-bs-toggle="collapse" data-bs-target="#inj-{{ inj.id }}">
+                    Details <i class="bi bi-chevron-down ms-1"></i>
+                  </button>
+                  <div class="collapse mt-2" id="inj-{{ inj.id }}">
+                    {% if inj.description %}<p class="small mb-1"><strong>Description:</strong> {{ inj.description }}</p>{% endif %}
+                    {% if inj.treatment_notes %}<p class="small mb-0"><strong>Treatment notes:</strong> {{ inj.treatment_notes }}</p>{% endif %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-clipboard-check fs-1 d-block mb-2"></i>
+        No injuries on record.
+      </div>
+    {% endif %}
+  </div>
+
+    </div> {# /col-lg-8 #}
+
+    <div class="col-lg-4 player-right-col">
+
+  {# ============ APPOINTMENTS TAB ============ #}
+  <div id="tab-appointments" class="player-tab" data-tab="appointments" style="display:none;">
+    {% if upcoming_appointments %}
+      {% for a in upcoming_appointments %}
+        <div class="card mb-2">
+          <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1">{{ a.preferred_date|date:"l, M d, Y" }}</h6>
+              <small class="text-muted">
+                {{ a.get_preferred_time_slot_display }}{% if a.therapist %} — {{ a.therapist.get_full_name }}{% endif %}
+              </small>
+              {% if a.note %}<div class="small text-muted mt-1">Note: {{ a.note|truncatechars:80 }}</div>{% endif %}
+            </div>
+            <span class="status-pill
+              {% if a.status == 'CONFIRMED' %}pill-recovered{% elif a.status == 'CANCELLED' %}pill-active{% else %}pill-recovering{% endif %}">
+              {{ a.get_status_display }}
+            </span>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+        No upcoming appointments.
+      </div>
+    {% endif %}
+    <button type="button" class="btn btn-primary w-100 py-3 mt-3"
+            data-bs-toggle="modal" data-bs-target="#requestAppointmentModal">
+      <i class="bi bi-plus-circle me-1"></i>Request New Appointment
+    </button>
+  </div>
+
+  {# ============ EVENTS TAB ============ #}
+  <div id="tab-events" class="player-tab" data-tab="events" style="display:none;">
+    <div class="btn-group mb-3 w-100" role="group" id="eventFilter">
+      <input type="radio" class="btn-check" name="ef" id="ef-all" autocomplete="off" checked>
+      <label class="btn btn-outline-primary" for="ef-all">All</label>
+      <input type="radio" class="btn-check" name="ef" id="ef-train" autocomplete="off">
+      <label class="btn btn-outline-primary" for="ef-train">Training</label>
+      <input type="radio" class="btn-check" name="ef" id="ef-game" autocomplete="off">
+      <label class="btn btn-outline-primary" for="ef-game">Games</label>
+    </div>
+    {% if upcoming_events %}
+      <div id="eventList">
+        {% for ev in upcoming_events %}
+          <div class="card mb-2 event-card" data-type="{{ ev.event_type }}">
+            <div class="card-body d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="mb-1 fw-bold">{{ ev.title }}</h6>
+                <small class="text-muted d-block">
+                  <i class="bi bi-calendar3 me-1"></i>{{ ev.start_datetime|date:"l, M d g:i A" }}
+                </small>
+                {% if ev.location %}
+                  <small class="text-muted d-block"><i class="bi bi-geo-alt me-1"></i>{{ ev.location }}</small>
+                {% endif %}
+              </div>
+              <span class="badge
+                {% if ev.event_type == 'GAME' %}bg-warning text-dark
+                {% elif ev.event_type == 'TRAINING' %}bg-primary
+                {% else %}bg-secondary{% endif %}">
+                {{ ev.get_event_type_display }}
+              </span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+        No upcoming events scheduled.
+      </div>
+    {% endif %}
+  </div>
+
+  {# ============ PROFILE TAB ============ #}
+  <div id="tab-profile" class="player-tab" data-tab="profile" style="display:none;">
+    <div class="card">
+      <div class="card-body text-center">
+        {% if request.user.profile_picture %}
+          <img src="{{ request.user.profile_picture.url }}" class="rounded-circle mb-3" style="width:96px;height:96px;object-fit:cover;">
+        {% else %}
+          <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center mb-3"
+               style="width:96px;height:96px;font-size:2rem;">
+            {{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}
+          </div>
+        {% endif %}
+        <h5 class="mb-1">{{ request.user.get_full_name|default:request.user.username }}</h5>
+        <p class="text-muted small mb-3">{{ request.user.email }}{% if request.user.team %} · {{ request.user.team.name }}{% endif %}</p>
+        <a href="{% url 'profile' %}" class="btn btn-outline-primary">
+          <i class="bi bi-pencil me-1"></i>Edit Profile
+        </a>
+      </div>
+    </div>
+  </div>
+
+    </div> {# /col-lg-4 #}
+  </div> {# /row #}
+
+</div>
+
+{# ============ REPORT INJURY MODAL ============ #}
+<div class="modal fade" id="reportInjuryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-md-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-plus-circle me-2"></i>Report an Injury
+          <small class="text-muted ms-2" id="ri-stepLabel">Step 1 of 3 — Where</small>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="{% url 'tracking:player_report_injury_submit' %}" id="reportInjuryForm">
+        {% csrf_token %}
+        <input type="hidden" name="body_part_id" id="ri-bodyPartId">
+        <input type="hidden" name="body_part_name" id="ri-bodyPartName">
+        <div class="modal-body">
+
+          {# ----- STEP 1 ----- #}
+          <div class="ri-step" data-ri-step="1">
+            <p class="text-muted small mb-2">Tap the area on the body where you're hurt.</p>
+            <div class="svg-wrap mb-2">
+              <svg id="riBodySVG" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 600" style="width:100%;height:auto;display:block;background:#fff;border-radius:10px;">
+                <text x="125" y="20" font-size="10" fill="#64748b" text-anchor="middle" font-family="Arial">FRONT</text>
+                <text x="375" y="20" font-size="10" fill="#64748b" text-anchor="middle" font-family="Arial">BACK</text>
+                <g>
+                  <ellipse class="ri-region" data-part="Head" cx="125" cy="54" rx="15" ry="19"/>
+                  <path class="ri-region" data-part="Neck" d="M118 73 L132 73 L136 92 L114 92 Z"/>
+                  <path class="ri-region" data-part="Shoulder" d="M92 98 C84 101 78 108 78 116 C78 125 86 131 95 129 C104 127 109 119 108 111 C107 103 101 97 92 98 Z"/>
+                  <path class="ri-region" data-part="Shoulder" d="M158 98 C166 101 172 108 172 116 C172 125 164 131 155 129 C146 127 141 119 142 111 C143 103 149 97 158 98 Z"/>
+                  <path class="ri-region" data-part="Chest" d="M102 102 C112 100 119 103 123 111 L123 144 C115 146 108 146 101 143 C96 136 93 128 93 119 C93 111 96 105 102 102 Z"/>
+                  <path class="ri-region" data-part="Chest" d="M148 102 C138 100 131 103 127 111 L127 144 C135 146 142 146 149 143 C154 136 157 128 157 119 C157 111 154 105 148 102 Z"/>
+                  <path class="ri-region" data-part="Abdomen" d="M108 149 L142 149 L143 213 L107 213 Z"/>
+                  <path class="ri-region" data-part="Upper Arm" d="M82 129 C75 148 75 170 80 191 C85 196 91 197 96 192 C99 171 98 149 94 129 Z"/>
+                  <path class="ri-region" data-part="Upper Arm" d="M168 129 C175 148 175 170 170 191 C165 196 159 197 154 192 C151 171 152 149 156 129 Z"/>
+                  <path class="ri-region" data-part="Forearm" d="M80 194 C72 214 72 236 77 256 C82 261 89 261 93 256 C95 235 92 214 88 194 Z"/>
+                  <path class="ri-region" data-part="Forearm" d="M170 194 C178 214 178 236 173 256 C168 261 161 261 157 256 C155 235 158 214 162 194 Z"/>
+                  <path class="ri-region" data-part="Hip" d="M104 221 C110 218 116 217 122 220 L120 246 C114 248 108 248 102 244 Z"/>
+                  <path class="ri-region" data-part="Hip" d="M146 221 C140 218 134 217 128 220 L130 246 C136 248 142 248 148 244 Z"/>
+                  <path class="ri-region" data-part="Thigh" d="M102 247 C112 245 118 247 122 252 C124 286 121 319 117 349 C112 353 107 353 102 349 C98 320 97 286 102 247 Z"/>
+                  <path class="ri-region" data-part="Thigh" d="M148 247 C138 245 132 247 128 252 C126 286 129 319 133 349 C138 353 143 353 148 349 C152 320 153 286 148 247 Z"/>
+                  <ellipse class="ri-region" data-part="Knee" cx="110" cy="360" rx="8" ry="7"/>
+                  <ellipse class="ri-region" data-part="Knee" cx="140" cy="360" rx="8" ry="7"/>
+                  <path class="ri-region" data-part="Lower Leg" d="M102 369 C110 366 115 367 118 372 C120 401 118 431 114 462 C109 466 104 466 99 462 C96 432 95 401 102 369 Z"/>
+                  <path class="ri-region" data-part="Lower Leg" d="M148 369 C140 366 135 367 132 372 C130 401 132 431 136 462 C141 466 146 466 151 462 C154 432 155 401 148 369 Z"/>
+                  <ellipse class="ri-region" data-part="Ankle" cx="106" cy="471" rx="6" ry="5"/>
+                  <ellipse class="ri-region" data-part="Ankle" cx="144" cy="471" rx="6" ry="5"/>
+                  <path class="ri-region" data-part="Foot" d="M98 478 C104 477 111 478 118 483 C117 488 109 491 99 491 C93 491 89 488 88 484 C90 481 94 479 98 478 Z"/>
+                  <path class="ri-region" data-part="Foot" d="M152 478 C146 477 139 478 132 483 C133 488 141 491 151 491 C157 491 161 488 162 484 C160 481 156 479 152 478 Z"/>
+                </g>
+                <g>
+                  <ellipse class="ri-region" data-part="Head" cx="375" cy="54" rx="15" ry="19"/>
+                  <path class="ri-region" data-part="Neck" d="M368 73 L382 73 L386 92 L364 92 Z"/>
+                  <path class="ri-region" data-part="Shoulder" d="M342 98 C334 101 328 108 328 116 C328 125 336 131 345 129 C354 127 359 119 358 111 C357 103 351 97 342 98 Z"/>
+                  <path class="ri-region" data-part="Shoulder" d="M408 98 C416 101 422 108 422 116 C422 125 414 131 405 129 C396 127 391 119 392 111 C393 103 399 97 408 98 Z"/>
+                  <path class="ri-region" data-part="Upper Back" d="M353 100 L397 100 L402 220 L348 220 Z"/>
+                  <path class="ri-region" data-part="Lower Back" d="M355 225 L395 225 L393 266 L357 266 Z"/>
+                  <path class="ri-region" data-part="Upper Arm" d="M332 129 C325 148 325 170 330 191 C335 196 341 197 346 192 C349 171 348 149 344 129 Z"/>
+                  <path class="ri-region" data-part="Upper Arm" d="M418 129 C425 148 425 170 420 191 C415 196 409 197 404 192 C401 171 402 149 406 129 Z"/>
+                  <path class="ri-region" data-part="Forearm" d="M330 194 C322 214 322 236 327 256 C332 261 339 261 343 256 C345 235 342 214 338 194 Z"/>
+                  <path class="ri-region" data-part="Forearm" d="M420 194 C428 214 428 236 423 256 C418 261 411 261 407 256 C405 235 408 214 412 194 Z"/>
+                  <path class="ri-region" data-part="Thigh" d="M349 307 C359 304 366 306 371 311 C373 346 370 378 365 408 C360 412 355 412 350 408 C346 378 345 346 349 307 Z"/>
+                  <path class="ri-region" data-part="Thigh" d="M401 307 C391 304 384 306 379 311 C377 346 380 378 385 408 C390 412 395 412 400 408 C404 378 405 346 401 307 Z"/>
+                  <path class="ri-region" data-part="Lower Leg" d="M350 413 C358 408 364 409 367 416 C371 438 369 454 364 478 C359 482 353 482 348 478 C344 454 345 438 350 413 Z"/>
+                  <path class="ri-region" data-part="Lower Leg" d="M400 413 C392 408 386 409 383 416 C379 438 381 454 386 478 C391 482 397 482 402 478 C406 454 405 438 400 413 Z"/>
+                </g>
+              </svg>
+            </div>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="small text-muted">Selected:</span>
+              <span class="badge bg-primary fs-6" id="ri-selectedBadge">None</span>
+            </div>
+            <hr class="my-3">
+            <label class="form-label small text-muted">Not shown above? Specify manually:</label>
+            <select class="form-select" id="ri-bodyPartManual">
+              <option value="">—</option>
+              {% for bp in body_parts %}
+                <option value="{{ bp.id }}" data-name="{{ bp.name }}">{{ bp.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          {# ----- STEP 2 ----- #}
+          <div class="ri-step" data-ri-step="2" style="display:none;">
+            <div class="mb-3">
+              <label class="form-label">Date of injury</label>
+              <input type="date" class="form-control" name="injury_date" id="ri-injuryDate" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">What happened?</label>
+              <textarea class="form-control" name="description" id="ri-description" rows="4"
+                        maxlength="500" placeholder="Describe what happened..." required></textarea>
+              <small class="text-muted"><span id="ri-charCount">0</span> / 500</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Context</label>
+              <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="context_type" id="ri-ctx-practice" value="Practice" autocomplete="off" checked>
+                <label class="btn btn-outline-primary" for="ri-ctx-practice">Practice</label>
+                <input type="radio" class="btn-check" name="context_type" id="ri-ctx-game" value="Game" autocomplete="off">
+                <label class="btn btn-outline-primary" for="ri-ctx-game">Game</label>
+                <input type="radio" class="btn-check" name="context_type" id="ri-ctx-other" value="Other" autocomplete="off">
+                <label class="btn btn-outline-primary" for="ri-ctx-other">Other</label>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">How did the injury occur?</label>
+              <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="contact_type" id="ri-contact-yes" value="CONTACT" autocomplete="off">
+                <label class="btn btn-outline-primary" for="ri-contact-yes">Contact</label>
+                <input type="radio" class="btn-check" name="contact_type" id="ri-contact-no" value="NON_CONTACT" autocomplete="off">
+                <label class="btn btn-outline-primary" for="ri-contact-no">Non-Contact</label>
+                <input type="radio" class="btn-check" name="contact_type" id="ri-contact-unsure" value="" autocomplete="off" checked>
+                <label class="btn btn-outline-primary" for="ri-contact-unsure">Not Sure</label>
+              </div>
+              <small class="text-muted d-block mt-1">
+                Not sure? Your therapist will confirm this during review.
+              </small>
+            </div>
+          </div>
+
+          {# ----- STEP 3 ----- #}
+          <div class="ri-step" data-ri-step="3" style="display:none;">
+            <h6 class="mb-3">Review your report</h6>
+            <div class="card bg-light">
+              <div class="card-body">
+                <dl class="row mb-0 small">
+                  <dt class="col-sm-4 text-muted">Body part</dt>
+                  <dd class="col-sm-8" id="ri-review-bodyPart">—</dd>
+                  <dt class="col-sm-4 text-muted">Date</dt>
+                  <dd class="col-sm-8" id="ri-review-date">—</dd>
+                  <dt class="col-sm-4 text-muted">Context</dt>
+                  <dd class="col-sm-8" id="ri-review-context">—</dd>
+                  <dt class="col-sm-4 text-muted">How it occurred</dt>
+                  <dd class="col-sm-8" id="ri-review-contact">—</dd>
+                  <dt class="col-sm-4 text-muted">Description</dt>
+                  <dd class="col-sm-8" id="ri-review-description">—</dd>
+                </dl>
+              </div>
+            </div>
+            <p class="text-muted small mt-3 mb-0">
+              <i class="bi bi-info-circle me-1"></i>
+              A therapist will review your report shortly and update the injury record with full details.
+            </p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" id="ri-prevBtn" style="display:none;">
+            <i class="bi bi-arrow-left me-1"></i>Back
+          </button>
+          <button type="button" class="btn btn-primary" id="ri-nextBtn" disabled>
+            Next <i class="bi bi-arrow-right ms-1"></i>
+          </button>
+          <button type="submit" class="btn btn-success" id="ri-submitBtn" style="display:none;">
+            <i class="bi bi-check2 me-1"></i>Submit Report
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# ============ REQUEST APPOINTMENT MODAL ============ #}
+<div class="modal fade" id="requestAppointmentModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-fullscreen-md-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-calendar-plus me-2"></i>Request an Appointment</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="{% url 'tracking:player_request_appointment_submit' %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Preferred date</label>
+            <input type="date" class="form-control" name="preferred_date" id="ra-date" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Preferred time</label>
+            <select class="form-select" name="preferred_time_slot" required>
+              <option value="MORNING">Morning (9 AM – 12 PM)</option>
+              <option value="AFTERNOON">Afternoon (12 PM – 5 PM)</option>
+              <option value="EVENING">Evening (5 PM – 7 PM)</option>
+            </select>
+          </div>
+          <div class="mb-0">
+            <label class="form-label">Note (optional)</label>
+            <textarea class="form-control" name="note" rows="3"
+                      placeholder="Reason for appointment or any notes..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-send me-1"></i>Send Request
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <style>
-  .status-badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    font-weight: 500;
+  .ri-region {
+    fill:#c8d0e0; stroke:#8896b0; stroke-width:1; cursor:pointer;
+    transition: fill 0.15s, filter 0.15s, stroke 0.15s;
   }
-  
-  .status-active {
-    background-color: #fef3c7;
-    color: #92400e;
+  .ri-region:hover {
+    filter: brightness(1.15) drop-shadow(0 0 4px rgba(11,118,239,0.5));
   }
-  
-  .status-recovering {
-    background-color: #dbeafe;
-    color: #1e40af;
+  .ri-region.sel {
+    fill: #0b76ef; stroke:#0b76ef; stroke-width:2;
+    filter: drop-shadow(0 0 6px rgba(11,118,239,0.8));
   }
-  
-  .status-recovered {
-    background-color: #d1fae5;
-    color: #065f46;
+  .svg-wrap { background:#fff; border-radius:10px; padding:10px; }
+</style>
+
+<script>
+  (function() {
+    // ---- Report Injury wizard ----
+    const form = document.getElementById('reportInjuryForm');
+    if (!form) return;
+    let step = 1;
+    let selectedPart = null;       // human-readable name
+    let selectedPartId = null;     // DB id when chosen via manual dropdown
+
+    const stepLabel = document.getElementById('ri-stepLabel');
+    const stepNames = ['', 'Where', 'What happened', 'Review'];
+    const prevBtn = document.getElementById('ri-prevBtn');
+    const nextBtn = document.getElementById('ri-nextBtn');
+    const submitBtn = document.getElementById('ri-submitBtn');
+    const selectedBadge = document.getElementById('ri-selectedBadge');
+    const manualSel = document.getElementById('ri-bodyPartManual');
+    const dateInput = document.getElementById('ri-injuryDate');
+    const desc = document.getElementById('ri-description');
+    const charCount = document.getElementById('ri-charCount');
+
+    function showStep(n) {
+      step = n;
+      document.querySelectorAll('.ri-step').forEach(el => {
+        el.style.display = (parseInt(el.dataset.riStep) === n) ? '' : 'none';
+      });
+      stepLabel.textContent = `Step ${n} of 3 — ${stepNames[n]}`;
+      prevBtn.style.display = n > 1 ? '' : 'none';
+      nextBtn.style.display = n < 3 ? '' : 'none';
+      submitBtn.style.display = n === 3 ? '' : 'none';
+      updateNextEnabled();
+      if (n === 3) populateReview();
+    }
+
+    function updateNextEnabled() {
+      if (step === 1) {
+        nextBtn.disabled = !selectedPart;
+      } else if (step === 2) {
+        nextBtn.disabled = !(dateInput.value && desc.value.trim());
+      } else {
+        nextBtn.disabled = false;
+      }
+    }
+
+    function setSelected(name, id) {
+      selectedPart = name || null;
+      selectedPartId = id || null;
+      selectedBadge.textContent = selectedPart || 'None';
+      selectedBadge.className = selectedPart ? 'badge bg-primary fs-6' : 'badge bg-secondary fs-6';
+      document.getElementById('ri-bodyPartName').value = selectedPart || '';
+      document.getElementById('ri-bodyPartId').value = selectedPartId || '';
+      // Reflect in SVG
+      document.querySelectorAll('.ri-region').forEach(el => {
+        el.classList.toggle('sel', el.dataset.part === selectedPart);
+      });
+      updateNextEnabled();
+    }
+
+    // SVG click
+    document.querySelectorAll('.ri-region').forEach(el => {
+      el.addEventListener('click', () => {
+        manualSel.value = '';
+        setSelected(el.dataset.part, null);
+      });
+    });
+
+    // Manual dropdown
+    manualSel.addEventListener('change', (e) => {
+      const opt = e.target.selectedOptions[0];
+      if (!opt || !opt.value) {
+        setSelected(null, null);
+      } else {
+        setSelected(opt.dataset.name, opt.value);
+      }
+    });
+
+    // Step 2 inputs
+    // Default today
+    const today = new Date();
+    const yyyy = today.getFullYear(), mm = String(today.getMonth()+1).padStart(2,'0'),
+          dd = String(today.getDate()).padStart(2,'0');
+    dateInput.max = `${yyyy}-${mm}-${dd}`;
+    dateInput.value = `${yyyy}-${mm}-${dd}`;
+    dateInput.addEventListener('change', updateNextEnabled);
+    desc.addEventListener('input', () => {
+      charCount.textContent = desc.value.length;
+      updateNextEnabled();
+    });
+
+    function populateReview() {
+      document.getElementById('ri-review-bodyPart').textContent = selectedPart || '—';
+      document.getElementById('ri-review-date').textContent = dateInput.value;
+      const ctx = form.querySelector('input[name="context_type"]:checked');
+      document.getElementById('ri-review-context').textContent = ctx ? ctx.value : '—';
+      const contact = form.querySelector('input[name="contact_type"]:checked');
+      const contactLabel = !contact || !contact.value
+        ? 'Not Sure'
+        : (contact.value === 'CONTACT' ? 'Contact' : 'Non-Contact');
+      document.getElementById('ri-review-contact').textContent = contactLabel;
+      document.getElementById('ri-review-description').textContent = desc.value || '—';
+    }
+
+    nextBtn.addEventListener('click', () => { if (step < 3) showStep(step + 1); });
+    prevBtn.addEventListener('click', () => { if (step > 1) showStep(step - 1); });
+
+    // Reset modal state when shown / hidden
+    const modalEl = document.getElementById('reportInjuryModal');
+    modalEl.addEventListener('show.bs.modal', () => {
+      setSelected(null, null);
+      manualSel.value = '';
+      desc.value = '';
+      charCount.textContent = '0';
+      dateInput.value = `${yyyy}-${mm}-${dd}`;
+      const firstCtx = form.querySelector('#ri-ctx-practice');
+      if (firstCtx) firstCtx.checked = true;
+      const defaultContact = form.querySelector('#ri-contact-unsure');
+      if (defaultContact) defaultContact.checked = true;
+      showStep(1);
+    });
+
+    // ---- Request Appointment: min date = today ----
+    const raDate = document.getElementById('ra-date');
+    if (raDate) {
+      raDate.min = `${yyyy}-${mm}-${dd}`;
+      raDate.value = `${yyyy}-${mm}-${dd}`;
+    }
+  })();
+</script>
+
+{# ============ MOBILE BOTTOM NAV ============ #}
+<nav class="mobile-bottom-nav d-md-none" aria-label="Player navigation">
+  <button type="button" class="mbn-btn active" data-target="home">
+    <i class="bi bi-house-door"></i><span>Home</span>
+    {% if unread_notifications %}<span class="mbn-badge">{{ unread_notifications }}</span>{% endif %}
+  </button>
+  <button type="button" class="mbn-btn" data-target="injuries">
+    <i class="bi bi-bandaid"></i><span>Injuries</span>
+  </button>
+  <a href="{% url 'player_calendar' %}" class="mbn-btn text-decoration-none">
+    <i class="bi bi-calendar3"></i><span>Calendar</span>
+  </a>
+  <button type="button" class="mbn-btn" data-target="events">
+    <i class="bi bi-calendar-event"></i><span>Events</span>
+  </button>
+  <button type="button" class="mbn-btn" data-target="profile">
+    <i class="bi bi-person"></i><span>Profile</span>
+  </button>
+</nav>
+
+<style>
+  /* ---- General ---- */
+  .player-dashboard { font-size: 15px; }
+  @media (max-width: 768px) {
+    .player-dashboard { font-size: 14px; padding-bottom: 80px !important; }
+    /* Hide top base navbar on mobile for player dashboard */
+    nav.navbar { display: none !important; }
+    main.container-fluid { padding-top: 1rem !important; }
   }
-  
-  .status-chronic {
-    background-color: #fee2e2;
-    color: #991b1b;
+
+  /* ---- Clearance status widget ---- */
+  .clearance-card {
+    border-radius: 16px;
+    min-height: 120px;
+    padding: 20px 24px;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+  .clearance-card h3 { font-size: 1.4rem; }
+
+  /* ---- Mini stat cards ---- */
+  .mini-stat { border-radius: 12px; }
+  .mini-stat-label  { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+  .mini-stat-value  { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+  .mini-stat-icon   { font-size: 1.5rem; opacity: 0.85; }
+  @media (max-width: 576px) {
+    .mini-stat-value { font-size: 1.2rem; }
+    .mini-stat-icon  { font-size: 1.2rem; }
+  }
+
+  /* ---- Notification dropdown ---- */
+  .notif-row { color: inherit; }
+  .notif-row:hover { background: #f1f5f9; }
+  .notif-row.unread { background: #eff6ff; }
+
+  /* ---- Status cards / pills ---- */
+  .status-card { border-left: 4px solid #cbd5e1; border-radius: 12px; }
+  .status-card.border-active     { border-left-color: #ef4444; }
+  .status-card.border-recovering { border-left-color: #f59e0b; }
+  .status-card.border-recovered  { border-left-color: #10b981; }
+  .status-card.status-ok         { border-left-color: #10b981; background: #ecfdf5; }
+  .status-pill {
+    display: inline-block; padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; white-space: nowrap;
+  }
+  .pill-active     { background:#fee2e2; color:#991b1b; }
+  .pill-recovering { background:#fef3c7; color:#92400e; }
+  .pill-recovered  { background:#d1fae5; color:#065f46; }
+
+  /* ---- Timeline ---- */
+  .injury-timeline { position: relative; padding-left: 0; }
+  .timeline-item { position: relative; padding-left: 18px; margin-bottom: 14px; }
+  .timeline-item::before {
+    content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px;
+    background:#cbd5e1;
+  }
+  .timeline-item.border-active::before     { background:#ef4444; }
+  .timeline-item.border-recovering::before { background:#f59e0b; }
+  .timeline-item.border-recovered::before  { background:#10b981; }
+  .timeline-item .card { border-radius:12px; }
+
+  /* ---- Bottom mobile nav ---- */
+  .mobile-bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 60px; background: #fff;
+    border-top: 1px solid #e2e8f0;
+    display: flex; justify-content: space-around; align-items: stretch;
+    z-index: 1040; padding: 4px 0;
+  }
+  .mbn-btn {
+    flex: 1; background: none; border: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #64748b; font-size: 11px; gap: 2px;
+    min-height: 44px; position: relative;
+  }
+  .mbn-btn i { font-size: 20px; }
+  .mbn-btn.active { color: #0b76ef; font-weight: 600; }
+  .mbn-badge {
+    position: absolute; top: 4px; right: 28%;
+    background: #ef4444; color: #fff;
+    border-radius: 999px; font-size: 9px; padding: 1px 5px; line-height: 1.2;
+  }
+
+  /* ---- Desktop: two-column Bootstrap layout with sticky right column ---- */
+  @media (min-width: 769px) {
+    .player-tab { display: block !important; }
+    .player-right-col {
+      position: sticky;
+      top: 20px;
+      align-self: flex-start;
+    }
+    .player-right-col .player-tab { margin-bottom: 1rem; }
   }
 </style>
+
+<script>
+  (function() {
+    function switchTab(target) {
+      document.querySelectorAll('.player-tab').forEach(el => {
+        el.style.display = (el.dataset.tab === target) ? 'block' : 'none';
+      });
+      document.querySelectorAll('.mbn-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.target === target);
+      });
+      // Only meaningful on mobile; desktop CSS forces display:block on all.
+      window.scrollTo(0, 0);
+    }
+    window.switchTab = switchTab;
+
+    // Respect ?tab=<id> in the URL (used by calendar bottom-nav, etc.)
+    const initialTab = new URLSearchParams(window.location.search).get('tab');
+    if (initialTab && ['home','injuries','appointments','events','profile'].includes(initialTab)) {
+      switchTab(initialTab);
+    }
+
+    // ---- Notification bell ----
+    const bellWrap = document.getElementById('bellWrap');
+    if (bellWrap) {
+      const listEl = document.getElementById('notifList');
+      const badgeEl = document.getElementById('bellBadge');
+      const csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+      const csrfToken = csrf ? csrf.value : '';
+
+      function fmtDate(iso) {
+        try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
+      }
+
+      function render(items) {
+        if (!items.length) {
+          listEl.innerHTML = '<p class="text-muted small text-center py-3 mb-0">No notifications.</p>';
+          return;
+        }
+        listEl.innerHTML = items.map(n => `
+          <a href="${n.link || '#'}" class="d-block px-3 py-2 border-bottom text-decoration-none notif-row ${n.is_read ? '' : 'unread'}"
+             data-id="${n.id}">
+            <div class="small ${n.is_read ? 'text-muted' : 'text-dark fw-semibold'}">${n.message}</div>
+            <div class="text-muted" style="font-size: 11px;">${fmtDate(n.created_at)} · ${n.type}</div>
+          </a>
+        `).join('');
+        listEl.querySelectorAll('.notif-row').forEach(row => {
+          row.addEventListener('click', (e) => {
+            const id = row.dataset.id;
+            fetch(`/notifications/${id}/read/`, {
+              method: 'POST',
+              headers: { 'X-CSRFToken': csrfToken },
+            });
+            // Let navigation proceed if link is real; otherwise just close.
+            if (!row.getAttribute('href') || row.getAttribute('href') === '#') {
+              e.preventDefault();
+              row.classList.remove('unread');
+            }
+          });
+        });
+      }
+
+      function refresh() {
+        fetch('/notifications/').then(r => r.json()).then(data => {
+          if (typeof data.unread_count === 'number') {
+            badgeEl.textContent = data.unread_count;
+            badgeEl.classList.toggle('d-none', data.unread_count === 0);
+          }
+          render(data.notifications || []);
+        }).catch(() => {
+          listEl.innerHTML = '<p class="text-danger small text-center py-3 mb-0">Could not load.</p>';
+        });
+      }
+
+      bellWrap.addEventListener('show.bs.dropdown', refresh);
+
+      const markAll = document.getElementById('markAllRead');
+      if (markAll) {
+        markAll.addEventListener('click', () => {
+          fetch('/notifications/read-all/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+          }).then(() => refresh());
+        });
+      }
+    }
+
+    document.querySelectorAll('.mbn-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.target));
+    });
+
+    // Event filter (All / Training / Games)
+    const setEvents = (filter) => {
+      document.querySelectorAll('.event-card').forEach(c => {
+        const t = c.dataset.type;
+        const match = (filter === 'all') ||
+                      (filter === 'training' && t === 'TRAINING') ||
+                      (filter === 'game' && t === 'GAME');
+        c.style.display = match ? '' : 'none';
+      });
+    };
+    const efAll = document.getElementById('ef-all');
+    const efTrain = document.getElementById('ef-train');
+    const efGame = document.getElementById('ef-game');
+    if (efAll) efAll.addEventListener('change', () => setEvents('all'));
+    if (efTrain) efTrain.addEventListener('change', () => setEvents('training'));
+    if (efGame) efGame.addEventListener('change', () => setEvents('game'));
+  })();
+</script>
 {% endblock %}

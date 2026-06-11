@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Profile - Lancer Injury Tracking{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h4 class="mb-0"><i class="bi bi-person-circle me-2"></i>My Profile</h4>
+          <span class="badge bg-info">Player</span>
+        </div>
+      </div>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {# ============ Personal Section ============ #}
+        <div class="card mb-3">
+          <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-person me-2"></i>Personal</h6>
+          </div>
+          <div class="card-body">
+            {# Photo #}
+            <div class="text-center mb-4">
+              {% if user.profile_picture %}
+                <img src="{{ user.profile_picture.url }}"
+                     class="rounded-circle shadow mb-2"
+                     style="width:120px;height:120px;object-fit:cover;border:3px solid #fff;">
+              {% else %}
+                <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center mb-2"
+                     style="width:120px;height:120px;font-size:2rem;border:3px solid #fff;">
+                  {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                </div>
+              {% endif %}
+              <div>
+                <label for="{{ personal_form.profile_picture.id_for_label }}" class="btn btn-outline-primary btn-sm">
+                  <i class="bi bi-camera me-1"></i>Change Photo
+                </label>
+                <div class="d-none">{{ personal_form.profile_picture }}</div>
+                {{ personal_form.profile_picture.errors }}
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">{{ personal_form.first_name.label }}</label>
+                {{ personal_form.first_name }}
+                {{ personal_form.first_name.errors }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ personal_form.last_name.label }}</label>
+                {{ personal_form.last_name }}
+                {{ personal_form.last_name.errors }}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">UWindsor Email</label>
+                <input type="email" class="form-control" value="{{ user.email }}" readonly>
+                <small class="text-muted">Email cannot be changed.</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Student ID</label>
+                <input type="text" class="form-control" value="{{ profile.student_id|default:'—' }}" readonly>
+                <small class="text-muted">Set during registration.</small>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">{{ personal_form.phone.label }}</label>
+                {{ personal_form.phone }}
+                {{ personal_form.phone.errors }}
+              </div>
+              <div class="col-md-6 d-flex align-items-end">
+                <a href="{% url 'password_reset' %}" class="btn btn-outline-secondary">
+                  <i class="bi bi-key me-1"></i>Change Password
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# ============ Sport & Team Section ============ #}
+        <div class="card mb-3">
+          <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-trophy me-2"></i>Sport &amp; Team</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">{{ sport_form.sport_gender_category.label }}</label>
+                {{ sport_form.sport_gender_category }}
+                {{ sport_form.sport_gender_category.errors }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ sport_form.team.label }}</label>
+                {{ sport_form.team }}
+                {{ sport_form.team.errors }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ sport_form.year_of_study.label }}</label>
+                {{ sport_form.year_of_study }}
+                {{ sport_form.year_of_study.errors }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ sport_form.number.label }}</label>
+                {{ sport_form.number }}
+                {{ sport_form.number.errors }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">{{ sport_form.height_feet.label }}</label>
+                {{ sport_form.height_feet }}
+                {{ sport_form.height_feet.errors }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">{{ sport_form.height_inches.label }}</label>
+                {{ sport_form.height_inches }}
+                {{ sport_form.height_inches.errors }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ sport_form.weight_lbs.label }}</label>
+                {{ sport_form.weight_lbs }}
+                {{ sport_form.weight_lbs.errors }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-5">
+          <a href="{% url 'tracking:player_dashboard' %}" class="btn btn-link text-muted">
+            <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check2 me-1"></i>Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Auto-submit the photo if user picks a new file via the styled label
+  document.addEventListener('DOMContentLoaded', function() {
+    const photo = document.getElementById('{{ personal_form.profile_picture.id_for_label }}');
+    if (photo) {
+      photo.addEventListener('change', function() {
+        // Visual feedback only; user still clicks Save Changes to commit
+        const lbl = document.querySelector('label[for="{{ personal_form.profile_picture.id_for_label }}"]');
+        if (lbl && photo.files.length) {
+          lbl.innerHTML = '<i class="bi bi-check2 me-1"></i>' + photo.files[0].name.slice(0, 24);
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

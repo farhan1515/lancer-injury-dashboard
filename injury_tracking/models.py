@@ -175,6 +175,10 @@ class InjuryRecord(models.Model):
 
     # Metadata
     is_confidential = models.BooleanField(default=False)
+    self_reported = models.BooleanField(
+        default=False,
+        help_text="True if reported directly by the player (pending therapist review).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -265,6 +269,53 @@ class TeamRoster(models.Model):
 
     def __str__(self):
         return f"{self.player.get_full_name()} - {self.team.name}"
+
+
+class Appointment(models.Model):
+    """Player-requested appointment with a team therapist/doctor."""
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('CONFIRMED', 'Confirmed'),
+        ('CANCELLED', 'Cancelled'),
+        ('COMPLETED', 'Completed'),
+    ]
+
+    TIME_SLOT_CHOICES = [
+        ('MORNING', 'Morning (9 AM - 12 PM)'),
+        ('AFTERNOON', 'Afternoon (12 PM - 5 PM)'),
+        ('EVENING', 'Evening (5 PM - 7 PM)'),
+    ]
+
+    player = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='appointments',
+        limit_choices_to={'role': 'PLAYER'},
+    )
+    therapist = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='therapist_appointments',
+        help_text="Doctor / therapist assigned to handle the appointment.",
+    )
+    team = models.ForeignKey(
+        'accounts.Team', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='appointments',
+    )
+    preferred_date = models.DateField()
+    preferred_time_slot = models.CharField(max_length=20, choices=TIME_SLOT_CHOICES)
+    confirmed_datetime = models.DateTimeField(null=True, blank=True)
+    note = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['preferred_date', 'created_at']
+        indexes = [
+            models.Index(fields=['player', 'status']),
+            models.Index(fields=['preferred_date']),
+        ]
+
+    def __str__(self):
+        return f"{self.player.get_full_name() or self.player.username} - {self.preferred_date} ({self.get_status_display()})"
 
 
 class InjuryAnalytics(models.Model):

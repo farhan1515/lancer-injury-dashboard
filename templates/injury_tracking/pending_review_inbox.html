@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Pending Reviews - Lancer Injury Tracking{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <div class="widget-icon warning me-3"><i class="bi bi-clipboard-pulse"></i></div>
+            <div>
+              <h1 class="card-title mb-1">Pending Review</h1>
+              <p class="text-muted mb-0">Self-reported injuries awaiting triage</p>
+            </div>
+          </div>
+          <span class="badge bg-warning text-dark fs-6">{{ pending|length }} pending</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      {% if pending %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Body Part</th>
+                <th>Reported</th>
+                <th>Description</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for inj in pending %}
+                <tr>
+                  <td>
+                    <strong>{{ inj.player.get_full_name|default:inj.player.username }}</strong>
+                    {% if inj.player.team %}<br><small class="text-muted">{{ inj.player.team.name }}</small>{% endif %}
+                  </td>
+                  <td>{{ inj.body_part.name }}</td>
+                  <td><small>{{ inj.reported_date|date:"M d, Y g:i A" }}</small></td>
+                  <td><small>{{ inj.description|truncatechars:120 }}</small></td>
+                  <td class="text-end">
+                    <a href="{% url 'tracking:injury_update' inj.pk %}" class="btn btn-sm btn-primary">
+                      <i class="bi bi-pencil-square me-1"></i>Review
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-check2-circle fs-1 d-block mb-2"></i>
+          No pending self-reported injuries. Inbox zero.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -7,6 +7,12 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('register/', views.register_view, name='register'),
+    path('register/step2/', views.player_register_step2_view, name='player_register_step2'),
+    path('player/calendar/', views.player_calendar, name='player_calendar'),
+    # Notifications
+    path('notifications/', views.get_notifications, name='get_notifications'),
+    path('notifications/<int:pk>/read/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/read-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
     path('complete-registration/', views.complete_registration_view, name='complete_registration'),
     path('logout/', views.logout_view, name='logout'),
     path('profile/', views.profile_view, name='profile'),

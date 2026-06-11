@@ -400,7 +400,7 @@
               {% if user.is_authenticated %}
                 <li class="nav-item">
                   {% if user.role == 'ADMIN' %}
-                    <a class="nav-link" href="{% url 'tracking:admin_dashboard' %}">
+                    <a class="nav-link" href="{% url 'tracking:analytics' %}">
                       <i class="bi bi-house-door me-1"></i>Dashboard
                     </a>
                   {% elif user.role == 'COACH' %}
@@ -432,10 +432,20 @@
                       <i class="bi bi-inboxes me-1"></i>Team Requests
                     </a>
                   </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'tracking:appointment_inbox' %}">
+                      <i class="bi bi-calendar-check me-1"></i>Appointments
+                    </a>
+                  </li>
                 {% elif user.role == 'COACH' %}
                   <li class="nav-item">
                     <a class="nav-link" href="{% url 'tracking:coach_dashboard' %}">
                       <i class="bi bi-people me-1"></i>Team
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'tracking:appointment_inbox' %}">
+                      <i class="bi bi-calendar-check me-1"></i>Appointments
                     </a>
                   </li>
                   <li class="nav-item">
@@ -450,16 +460,28 @@
                   </li>
                 {% elif user.role == 'DOCTOR' %}
                   <li class="nav-item">
+                    <a class="nav-link" href="{% url 'tracking:pending_review_inbox' %}">
+                      <i class="bi bi-clipboard-pulse me-1"></i>Pending Reviews
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'tracking:appointment_inbox' %}">
+                      <i class="bi bi-calendar-check me-1"></i>Appointments
+                    </a>
+                  </li>
+                  <li class="nav-item">
                     <a class="nav-link" href="{% url 'request_team_access' %}">
                       <i class="bi bi-person-check me-1"></i>Request Access
                     </a>
                   </li>
                 {% endif %}
+                {% if user.role != 'PLAYER' %}
                 <li class="nav-item">
                   <a class="nav-link" href="{% url 'tracking:injury_list' %}">
                     <i class="bi bi-clipboard-data me-1"></i>Injuries
                   </a>
                 </li>
+                {% endif %}
                 <li class="nav-item">
                   <a class="nav-link" href="{% url 'profile' %}">
                     <i class="bi bi-person-circle me-1"></i>Profile

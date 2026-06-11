@@ -17,11 +17,11 @@
               </div>
               <div>
                 <h1 class="card-title mb-1">Analytics Dashboard</h1>
-                <p class="text-muted mb-0">Comprehensive injury data analysis and insights</p>
+                <p class="text-muted mb-0">Injury data analysis and insights</p>
               </div>
             </div>
             <div class="d-flex align-items-center">
-              <span class="badge bg-primary me-2">{{ current_year }}</span>
+              <span class="badge bg-primary me-2">{{ selected_year }}</span>
               {% if selected_team %}
                 <span class="badge bg-info">{{ selected_team.name }}</span>
               {% endif %}
@@ -32,35 +32,16 @@
     </div>
   </div>
 
-  <!-- Important Notice -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="alert alert-info d-flex align-items-center">
-        <i class="bi bi-info-circle me-2 fs-4"></i>
-        <div>
-          <strong>Comprehensive Data Tracking:</strong> This analytics dashboard includes <strong>ALL injuries</strong> 
-          regardless of status (Active, Recovering, Recovered, Chronic) to ensure complete tracking and analysis. 
-          Recovered injuries are preserved for end-of-year reporting and trend analysis.
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Filters -->
+  <!-- Filters (single horizontal row) -->
   <div class="row mb-4">
     <div class="col-12">
       <div class="card">
-        <div class="card-header">
-          <h5 class="card-title mb-0">
-            <i class="bi bi-funnel me-2"></i>Filters & Date Range
-          </h5>
-        </div>
         <div class="card-body">
-          <form method="get" class="row g-3">
+          <form method="get" class="d-flex flex-wrap align-items-end gap-2">
             {% if teams %}
-            <div class="col-md-3">
-              <label for="team" class="form-label">Select Team</label>
-              <select name="team" id="team" class="form-control">
+            <div style="min-width: 160px; flex: 1 1 160px;">
+              <label for="team" class="form-label mb-1 small">Team</label>
+              <select name="team" id="team" class="form-control form-control-sm">
                 <option value="">All Teams</option>
                 {% for team in teams %}
                   <option value="{{ team.id }}" {% if selected_team and selected_team.id == team.id %}selected{% endif %}>
@@ -70,29 +51,27 @@
               </select>
             </div>
             {% endif %}
-            <div class="col-md-3">
-              <label for="year" class="form-label">Academic Year</label>
-              <select name="year" id="year" class="form-control">
+            <div style="min-width: 130px; flex: 1 1 130px;">
+              <label for="year" class="form-label mb-1 small">Year</label>
+              <select name="year" id="year" class="form-control form-control-sm">
                 {% for year in available_years %}
                   <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}</option>
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-3">
-              <label for="date_from" class="form-label">Date From (Optional)</label>
-              <input type="date" name="date_from" id="date_from" class="form-control" value="{{ date_from }}">
-              <small class="text-muted">Leave empty to use year filter</small>
+            <div style="min-width: 150px; flex: 1 1 150px;">
+              <label for="date_from" class="form-label mb-1 small">Date From</label>
+              <input type="date" name="date_from" id="date_from" class="form-control form-control-sm" value="{{ date_from }}">
             </div>
-            <div class="col-md-3">
-              <label for="date_to" class="form-label">Date To (Optional)</label>
-              <input type="date" name="date_to" id="date_to" class="form-control" value="{{ date_to }}">
-              <small class="text-muted">Leave empty to use year filter</small>
+            <div style="min-width: 150px; flex: 1 1 150px;">
+              <label for="date_to" class="form-label mb-1 small">Date To</label>
+              <input type="date" name="date_to" id="date_to" class="form-control form-control-sm" value="{{ date_to }}">
             </div>
-            <div class="col-md-12">
-              <button type="submit" class="btn btn-primary">
-                <i class="bi bi-search me-1"></i>Apply Filters
+            <div>
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-search me-1"></i>Apply
               </button>
-              <a href="{% url 'tracking:analytics' %}" class="btn btn-outline-secondary">
+              <a href="{% url 'tracking:analytics' %}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
               </a>
             </div>
@@ -102,109 +81,208 @@
     </div>
   </div>
 
-  <!-- Key Metrics -->
+  <!-- KPI Blocks (clickable) -->
   <div class="row mb-4">
-    <div class="col-lg-2 col-md-4 col-6 mb-3">
-      <div class="widget">
+    <div class="col-md-4 mb-3">
+      <div class="widget kpi-block" role="button" data-bs-toggle="collapse" data-bs-target="#kpi-total" aria-expanded="false" aria-controls="kpi-total">
         <div class="d-flex align-items-center">
           <div class="widget-icon primary me-3">
             <i class="bi bi-graph-up"></i>
           </div>
-          <div>
+          <div class="flex-grow-1">
             <h3 class="mb-1">{{ total_injuries }}</h3>
             <p class="text-muted mb-0">Total Injuries</p>
-            <small class="text-muted">All Statuses</small>
+            <small class="text-muted">Click to view details</small>
           </div>
+          <i class="bi bi-chevron-down toggle-chevron"></i>
         </div>
       </div>
     </div>
-    
-    <div class="col-lg-2 col-md-4 col-6 mb-3">
-      <div class="widget">
+
+    <div class="col-md-4 mb-3">
+      <div class="widget kpi-block" role="button" data-bs-toggle="collapse" data-bs-target="#kpi-active" aria-expanded="false" aria-controls="kpi-active">
         <div class="d-flex align-items-center">
           <div class="widget-icon warning me-3">
             <i class="bi bi-exclamation-triangle"></i>
           </div>
-          <div>
+          <div class="flex-grow-1">
             <h3 class="mb-1">{{ active_count }}</h3>
             <p class="text-muted mb-0">Active</p>
+            <small class="text-muted">Click to view details</small>
           </div>
+          <i class="bi bi-chevron-down toggle-chevron"></i>
         </div>
       </div>
     </div>
-    
-    <div class="col-lg-2 col-md-4 col-6 mb-3">
-      <div class="widget">
-        <div class="d-flex align-items-center">
-          <div class="widget-icon info me-3">
-            <i class="bi bi-arrow-repeat"></i>
-          </div>
-          <div>
-            <h3 class="mb-1">{{ recovering_count }}</h3>
-            <p class="text-muted mb-0">Recovering</p>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="col-lg-2 col-md-4 col-6 mb-3">
-      <div class="widget">
+
+    <div class="col-md-4 mb-3">
+      <div class="widget kpi-block" role="button" data-bs-toggle="collapse" data-bs-target="#kpi-recovered" aria-expanded="false" aria-controls="kpi-recovered">
         <div class="d-flex align-items-center">
           <div class="widget-icon success me-3">
             <i class="bi bi-check-circle"></i>
           </div>
-          <div>
+          <div class="flex-grow-1">
             <h3 class="mb-1">{{ recovered_count }}</h3>
             <p class="text-muted mb-0">Recovered</p>
-            <small class="text-success">Included in analysis</small>
+            <small class="text-muted">Click to view details</small>
           </div>
+          <i class="bi bi-chevron-down toggle-chevron"></i>
         </div>
       </div>
     </div>
-    
-    <div class="col-lg-2 col-md-4 col-6 mb-3">
-      <div class="widget">
-        <div class="d-flex align-items-center">
-          <div class="widget-icon secondary me-3">
-            <i class="bi bi-clock-history"></i>
-          </div>
-          <div>
-            <h3 class="mb-1">{{ chronic_count }}</h3>
-            <p class="text-muted mb-0">Chronic</p>
-          </div>
-        </div>
+  </div>
+
+  <!-- Collapsible KPI tables -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="collapse" id="kpi-total">
+        {% include 'injury_tracking/_kpi_table.html' with table_id="tbl-total" injuries=all_injuries_detail title="All Injuries" %}
+      </div>
+      <div class="collapse" id="kpi-active">
+        {% include 'injury_tracking/_kpi_table.html' with table_id="tbl-active" injuries=active_injuries_detail title="Active Injuries" %}
+      </div>
+      <div class="collapse" id="kpi-recovered">
+        {% include 'injury_tracking/_kpi_table.html' with table_id="tbl-recovered" injuries=recovered_injuries_detail title="Recovered Injuries" %}
       </div>
     </div>
-    
-    <div class="col-lg-2 col-md-4 col-6 mb-3">
-      <div class="widget">
-        <div class="d-flex align-items-center">
-          <div class="widget-icon info me-3">
-            <i class="bi bi-clock"></i>
+  </div>
+
+  <!-- Injury Body Map -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <h5 class="card-title mb-0">
+            <i class="bi bi-person-bounding-box me-2"></i>Injury Body Map
+          </h5>
+          <div class="d-flex gap-2 align-items-center">
+            <span class="ldot" style="background:#c8d0e0;border:1px solid #8896b0"></span><small>None</small>
+            <span class="ldot" style="background:#fcd34d"></span><small>1–2</small>
+            <span class="ldot" style="background:#f97316"></span><small>3–5</small>
+            <span class="ldot" style="background:#ef4444"></span><small>6+</small>
           </div>
-          <div>
-            <h3 class="mb-1">
-              {% if avg_recovery_time %}
-                {{ avg_recovery_time|floatformat:1 }}
-              {% else %}
-                -
-              {% endif %}
-            </h3>
-            <p class="text-muted mb-0">Avg Recovery (days)</p>
+        </div>
+        <div class="card-body">
+          <div class="row g-4">
+            <!-- SVG -->
+            <div class="col-lg-5">
+              <div class="svg-wrap">
+                <svg id="bodySVG" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 600">
+                  <rect x="0" y="0" width="500" height="600" fill="#ffffff"/>
+                  <text class="label-txt" x="125" y="20">FRONT</text>
+                  <text class="label-txt" x="375" y="20">BACK</text>
+
+                  <!-- FRONT -->
+                  <g id="front-view">
+                    <ellipse class="body-region" data-part="Head" cx="125" cy="54" rx="15" ry="19"/>
+                    <path class="body-region" data-part="Neck" d="M118 73 L132 73 L136 92 L114 92 Z"/>
+                    <path class="body-region" data-part="Shoulder" d="M92 98 C84 101 78 108 78 116 C78 125 86 131 95 129 C104 127 109 119 108 111 C107 103 101 97 92 98 Z"/>
+                    <path class="body-region" data-part="Shoulder" d="M158 98 C166 101 172 108 172 116 C172 125 164 131 155 129 C146 127 141 119 142 111 C143 103 149 97 158 98 Z"/>
+                    <path class="body-region" data-part="Chest" d="M102 102 C112 100 119 103 123 111 L123 144 C115 146 108 146 101 143 C96 136 93 128 93 119 C93 111 96 105 102 102 Z"/>
+                    <path class="body-region" data-part="Chest" d="M148 102 C138 100 131 103 127 111 L127 144 C135 146 142 146 149 143 C154 136 157 128 157 119 C157 111 154 105 148 102 Z"/>
+                    <path class="body-region" data-part="Abdomen" d="M110 149 C116 146 121 146 124 149 L123 167 C118 169 114 169 110 167 Z"/>
+                    <path class="body-region" data-part="Abdomen" d="M126 149 C129 146 134 146 140 149 L140 167 C136 169 132 169 127 167 Z"/>
+                    <path class="body-region" data-part="Abdomen" d="M109 171 C114 169 119 169 123 171 L122 189 C117 191 113 191 108 189 Z"/>
+                    <path class="body-region" data-part="Abdomen" d="M127 171 C131 169 136 169 141 171 L142 189 C137 191 133 191 128 189 Z"/>
+                    <path class="body-region" data-part="Abdomen" d="M108 193 C113 191 117 191 121 193 L120 211 C115 214 111 214 106 211 Z"/>
+                    <path class="body-region" data-part="Abdomen" d="M129 193 C133 191 137 191 142 193 L144 211 C139 214 135 214 130 211 Z"/>
+                    <path class="body-region" data-part="Obliques" d="M101 149 L108 149 L106 211 L97 223 L93 199 L94 167 Z"/>
+                    <path class="body-region" data-part="Obliques" d="M149 149 L142 149 L144 211 L153 223 L157 199 L156 167 Z"/>
+                    <path class="body-region" data-part="Upper Arm" d="M82 129 C75 148 75 170 80 191 C85 196 91 197 96 192 C99 171 98 149 94 129 Z"/>
+                    <path class="body-region" data-part="Upper Arm" d="M168 129 C175 148 175 170 170 191 C165 196 159 197 154 192 C151 171 152 149 156 129 Z"/>
+                    <path class="body-region" data-part="Forearm" d="M80 194 C72 214 72 236 77 256 C82 261 89 261 93 256 C95 235 92 214 88 194 Z"/>
+                    <path class="body-region" data-part="Forearm" d="M170 194 C178 214 178 236 173 256 C168 261 161 261 157 256 C155 235 158 214 162 194 Z"/>
+                    <path class="body-region" data-part="Pelvis/Hip" d="M104 221 C110 218 116 217 122 220 L120 246 C114 248 108 248 102 244 Z"/>
+                    <path class="body-region" data-part="Pelvis/Hip" d="M146 221 C140 218 134 217 128 220 L130 246 C136 248 142 248 148 244 Z"/>
+                    <path class="body-region" data-part="Upper Leg" d="M102 247 C112 245 118 247 122 252 C124 286 121 319 117 349 C112 353 107 353 102 349 C98 320 97 286 102 247 Z"/>
+                    <path class="body-region" data-part="Upper Leg" d="M148 247 C138 245 132 247 128 252 C126 286 129 319 133 349 C138 353 143 353 148 349 C152 320 153 286 148 247 Z"/>
+                    <ellipse class="body-region" data-part="Knee" cx="110" cy="360" rx="8" ry="7"/>
+                    <ellipse class="body-region" data-part="Knee" cx="140" cy="360" rx="8" ry="7"/>
+                    <path class="body-region" data-part="Lower Leg" d="M102 369 C110 366 115 367 118 372 C120 401 118 431 114 462 C109 466 104 466 99 462 C96 432 95 401 102 369 Z"/>
+                    <path class="body-region" data-part="Lower Leg" d="M148 369 C140 366 135 367 132 372 C130 401 132 431 136 462 C141 466 146 466 151 462 C154 432 155 401 148 369 Z"/>
+                    <path class="body-region" data-part="Foot" d="M98 469 C104 468 111 469 118 474 C117 479 109 482 99 482 C93 482 89 479 88 475 C90 472 94 470 98 469 Z"/>
+                    <path class="body-region" data-part="Foot" d="M152 469 C146 468 139 469 132 474 C133 479 141 482 151 482 C157 482 161 479 162 475 C160 472 156 470 152 469 Z"/>
+                    <path class="guide" d="M125 35 C118 39 115 47 115 56 C115 66 118 73 125 76 C132 73 135 66 135 56 C135 47 132 39 125 35 Z"/>
+                    <path class="guide" d="M114 92 C103 95 94 101 88 111"/>
+                    <path class="guide" d="M136 92 C147 95 156 101 162 111"/>
+                    <path class="guide" d="M123 111 L127 111"/>
+                    <path class="guide" d="M125 149 L125 221"/>
+                    <path class="guide" d="M102 247 C108 254 116 258 125 259 C134 258 142 254 148 247"/>
+                  </g>
+
+                  <!-- BACK -->
+                  <g id="back-view">
+                    <ellipse class="body-region" data-part="Head" cx="375" cy="54" rx="15" ry="19"/>
+                    <path class="body-region" data-part="Neck" d="M368 73 L382 73 L386 92 L364 92 Z"/>
+                    <path class="body-region" data-part="Trapezius" d="M375 92 L402 108 L392 159 L358 159 L348 108 Z"/>
+                    <path class="body-region" data-part="Shoulder" d="M342 98 C334 101 328 108 328 116 C328 125 336 131 345 129 C354 127 359 119 358 111 C357 103 351 97 342 98 Z"/>
+                    <path class="body-region" data-part="Shoulder" d="M408 98 C416 101 422 108 422 116 C422 125 414 131 405 129 C396 127 391 119 392 111 C393 103 399 97 408 98 Z"/>
+                    <path class="body-region" data-part="Upper Back" d="M353 120 C341 138 338 164 343 205 C349 219 359 227 371 228 L374 159 Z"/>
+                    <path class="body-region" data-part="Upper Back" d="M397 120 C409 138 412 164 407 205 C401 219 391 227 379 228 L376 159 Z"/>
+                    <path class="body-region" data-part="Lower Back" d="M359 229 C365 223 370 222 374 225 L373 266 C367 269 362 268 357 262 Z"/>
+                    <path class="body-region" data-part="Lower Back" d="M391 229 C385 223 380 222 376 225 L377 266 C383 269 388 268 393 262 Z"/>
+                    <path class="body-region" data-part="Upper Arm" d="M332 129 C325 148 325 170 330 191 C335 196 341 197 346 192 C349 171 348 149 344 129 Z"/>
+                    <path class="body-region" data-part="Upper Arm" d="M418 129 C425 148 425 170 420 191 C415 196 409 197 404 192 C401 171 402 149 406 129 Z"/>
+                    <path class="body-region" data-part="Forearm" d="M330 194 C322 214 322 236 327 256 C332 261 339 261 343 256 C345 235 342 214 338 194 Z"/>
+                    <path class="body-region" data-part="Forearm" d="M420 194 C428 214 428 236 423 256 C418 261 411 261 407 256 C405 235 408 214 412 194 Z"/>
+                    <path class="body-region" data-part="Glutes" d="M356 269 C347 278 344 291 347 305 C353 313 361 315 372 310 L372 273 Z"/>
+                    <path class="body-region" data-part="Glutes" d="M394 269 C403 278 406 291 403 305 C397 313 389 315 378 310 L378 273 Z"/>
+                    <path class="body-region" data-part="Upper Leg" d="M349 307 C359 304 366 306 371 311 C373 346 370 378 365 408 C360 412 355 412 350 408 C346 378 345 346 349 307 Z"/>
+                    <path class="body-region" data-part="Upper Leg" d="M401 307 C391 304 384 306 379 311 C377 346 380 378 385 408 C390 412 395 412 400 408 C404 378 405 346 401 307 Z"/>
+                    <path class="body-region" data-part="Lower Leg" d="M350 413 C358 408 364 409 367 416 C371 438 369 454 364 478 C359 482 353 482 348 478 C344 454 345 438 350 413 Z"/>
+                    <path class="body-region" data-part="Lower Leg" d="M400 413 C392 408 386 409 383 416 C379 438 381 454 386 478 C391 482 397 482 402 478 C406 454 405 438 400 413 Z"/>
+                    <path class="body-region" data-part="Foot" d="M348 485 C355 484 362 485 368 490 C367 495 360 498 350 498 C344 498 340 495 339 491 C341 488 344 486 348 485 Z"/>
+                    <path class="body-region" data-part="Foot" d="M402 485 C395 484 388 485 382 490 C383 495 390 498 400 498 C406 498 410 495 411 491 C409 488 406 486 402 485 Z"/>
+                    <path class="guide" d="M375 35 C368 39 365 47 365 56 C365 66 368 73 375 76 C382 73 385 66 385 56 C385 47 382 39 375 35 Z"/>
+                    <path class="guide" d="M364 92 C353 95 344 101 338 111"/>
+                    <path class="guide" d="M386 92 C397 95 406 101 412 111"/>
+                    <path class="guide" d="M375 92 L375 310"/>
+                  </g>
+                </svg>
+              </div>
+              <div id="infoBox" class="infobox">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <strong id="infoTitle" class="text-primary"></strong>
+                  <span id="infoBadge" class="badge bg-primary"></span>
+                </div>
+                <div id="infoStatus"></div>
+              </div>
+            </div>
+
+            <!-- Ranked list -->
+            <div class="col-lg-7">
+              <h6 class="text-muted fw-semibold mb-3"><i class="bi bi-sort-down me-1"></i>Injuries by Body Part</h6>
+              <div id="bpList"></div>
+
+              <div id="injSec" class="injsec">
+                <hr>
+                <h6 class="fw-semibold mb-2">
+                  <i class="bi bi-list-ul me-1"></i>
+                  <span id="tblTitle" class="text-primary"></span>
+                </h6>
+                <p class="text-muted small mb-2" id="bpMessage">
+                  Click a body part to see injuries — or view the full list in Injury Records.
+                </p>
+                <a id="bpInjuryLink" href="{% url 'tracking:injury_list' %}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-arrow-right me-1"></i>View injuries for this body part
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Charts Row 1 -->
+  <div id="bodyMapTip" class="tip"></div>
+
+  <!-- Charts: Monthly Injury Trends + Severity Distribution -->
   <div class="row mb-4">
     <div class="col-lg-6 mb-4">
       <div class="card">
         <div class="card-header">
           <h5 class="card-title mb-0">
             <i class="bi bi-bar-chart me-2"></i>Monthly Injury Trends
-            <small class="text-muted ms-2">(All injuries including recovered)</small>
           </h5>
         </div>
         <div class="card-body">
@@ -217,35 +295,12 @@
         </div>
       </div>
     </div>
-    
-    <div class="col-lg-6 mb-4">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="card-title mb-0">
-            <i class="bi bi-pie-chart me-2"></i>Injury Types Distribution
-            <small class="text-muted ms-2">(All injuries including recovered)</small>
-          </h5>
-        </div>
-        <div class="card-body">
-          <div style="position: relative; height: 300px;">
-            <canvas id="injuryTypesChart"></canvas>
-          </div>
-          {% if not injury_type_data %}
-          <p class="text-muted text-center mt-3">No injury type data available.</p>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Charts Row 2 -->
-  <div class="row mb-4">
     <div class="col-lg-6 mb-4">
       <div class="card">
         <div class="card-header">
           <h5 class="card-title mb-0">
             <i class="bi bi-bar-chart me-2"></i>Body Parts Affected
-            <small class="text-muted ms-2">(All injuries including recovered)</small>
           </h5>
         </div>
         <div class="card-body">
@@ -258,298 +313,24 @@
         </div>
       </div>
     </div>
-    
-    <div class="col-lg-6 mb-4">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="card-title mb-0">
-            <i class="bi bi-pie-chart me-2"></i>Severity Distribution
-            <small class="text-muted ms-2">(All injuries including recovered)</small>
-          </h5>
-        </div>
-        <div class="card-body">
-          <div style="position: relative; height: 300px;">
-            <canvas id="severityChart"></canvas>
-          </div>
-          {% if not severity_data %}
-          <p class="text-muted text-center mt-3">No severity data available.</p>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Detailed Player Injury Breakdown -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="card-title mb-0">
-            <i class="bi bi-person-badge me-2"></i>Player Injury Details
-            <small class="text-muted ms-2">(Complete injury history with player information)</small>
-          </h5>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-hover table-striped">
-              <thead>
-                <tr>
-                  <th>Player</th>
-                  <th>Injury Date</th>
-                  <th>Injury Type</th>
-                  <th>Body Part</th>
-                  <th>Severity</th>
-                  <th>Status</th>
-                  <th>Recovery Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for injury in all_injuries_detail %}
-                <tr>
-                  <td>
-                    <strong>{{ injury.player.get_full_name|default:injury.player.username }}</strong>
-                    {% if injury.player.team %}
-                      <br><small class="text-muted">{{ injury.player.team.name }}</small>
-                    {% endif %}
-                  </td>
-                  <td>{{ injury.injury_date|date:"M d, Y" }}</td>
-                  <td>{{ injury.injury_type.name }}</td>
-                  <td>{{ injury.body_part.name }}</td>
-                  <td>
-                    <span class="badge" style="background-color: {{ injury.severity.color_code }}; color: white;">
-                      {{ injury.severity.name }}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="badge 
-                      {% if injury.status == 'ACTIVE' %}bg-warning
-                      {% elif injury.status == 'RECOVERING' %}bg-info
-                      {% elif injury.status == 'RECOVERED' %}bg-success
-                      {% elif injury.status == 'CHRONIC' %}bg-secondary
-                      {% else %}bg-dark{% endif %}">
-                      {{ injury.status }}
-                    </span>
-                  </td>
-                  <td>
-                    {% if injury.actual_recovery_time %}
-                      {{ injury.actual_recovery_time }} days
-                    {% elif injury.estimated_recovery_time %}
-                      Est: {{ injury.estimated_recovery_time }} days
-                    {% else %}
-                      -
-                    {% endif %}
-                  </td>
-                </tr>
-                {% empty %}
-                <tr>
-                  <td colspan="7" class="text-center text-muted">No injury data available for the selected filters.</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Status Breakdown -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="card-title mb-0">
-            <i class="bi bi-pie-chart me-2"></i>Injury Status Breakdown
-            <small class="text-muted ms-2">(All injuries included for comprehensive analysis)</small>
-          </h5>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>Status</th>
-                  <th>Count</th>
-                  <th>Percentage</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for status in status_breakdown %}
-                <tr>
-                  <td>
-                    <span class="badge 
-                      {% if status.status == 'ACTIVE' %}bg-warning
-                      {% elif status.status == 'RECOVERING' %}bg-info
-                      {% elif status.status == 'RECOVERED' %}bg-success
-                      {% elif status.status == 'CHRONIC' %}bg-secondary
-                      {% else %}bg-dark{% endif %}">
-                      {{ status.status }}
-                    </span>
-                  </td>
-                  <td><strong>{{ status.count }}</strong></td>
-                  <td>
-                    {% if total_injuries > 0 %}
-                      {% widthratio status.count total_injuries 100 %}%
-                    {% else %}
-                      0%
-                    {% endif %}
-                  </td>
-                </tr>
-                {% empty %}
-                <tr>
-                  <td colspan="3" class="text-center text-muted">No injury data available for the selected filters.</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Team Comparison (for admins) -->
-  {% if team_comparison %}
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="card-title mb-0">
-            <i class="bi bi-people me-2"></i>Team Comparison
-            <small class="text-muted ms-2">(Includes all injuries regardless of status)</small>
-          </h5>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>Team</th>
-                  <th>Total Injuries</th>
-                  <th>Active</th>
-                  <th>Recovering</th>
-                  <th>Recovered</th>
-                  <th>Chronic</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for team in team_comparison %}
-                <tr>
-                  <td>
-                    <div class="d-flex align-items-center">
-                      <div class="avatar-sm bg-primary text-white rounded-circle me-2 d-flex align-items-center justify-content-center">
-                        {{ team.team|first|upper }}
-                      </div>
-                      <div>
-                        <div class="fw-bold">{{ team.team }}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span class="badge bg-primary">{{ team.total_injuries }}</span>
-                    <small class="text-muted d-block">All Statuses</small>
-                  </td>
-                  <td>
-                    <span class="badge bg-warning">{{ team.active_injuries }}</span>
-                  </td>
-                  <td>
-                    <span class="badge bg-info">{{ team.recovering_injuries }}</span>
-                  </td>
-                  <td>
-                    <span class="badge bg-success">{{ team.recovered_injuries }}</span>
-                  </td>
-                  <td>
-                    <span class="badge bg-secondary">{{ team.chronic_injuries }}</span>
-                  </td>
-                  <td>
-                    <div class="progress" style="height: 8px;">
-                      <div class="progress-bar bg-info" role="progressbar" 
-                           style="width: {% if team.total_injuries > 0 %}{% widthratio team.active_injuries team.total_injuries 100 %}{% else %}0{% endif %}%">
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Insights and Recommendations -->
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="card-title mb-0">
-            <i class="bi bi-lightbulb me-2"></i>Insights & Recommendations
-          </h5>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <div class="col-lg-4 mb-3">
-              <div class="alert alert-info">
-                <h6 class="alert-heading">
-                  <i class="bi bi-info-circle me-2"></i>Trend Analysis
-                </h6>
-                <p class="mb-0">Monitor monthly trends to identify patterns and seasonal variations in injury rates.</p>
-              </div>
-            </div>
-            <div class="col-lg-4 mb-3">
-              <div class="alert alert-warning">
-                <h6 class="alert-heading">
-                  <i class="bi bi-exclamation-triangle me-2"></i>Prevention Focus
-                </h6>
-                <p class="mb-0">Focus prevention efforts on the most common injury types and affected body parts.</p>
-              </div>
-            </div>
-            <div class="col-lg-4 mb-3">
-              <div class="alert alert-success">
-                <h6 class="alert-heading">
-                  <i class="bi bi-check-circle me-2"></i>Recovery Optimization
-                </h6>
-                <p class="mb-0">Use recovery time data to improve treatment protocols and return-to-play decisions.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // Wait for DOM to be fully loaded
   document.addEventListener('DOMContentLoaded', function() {
-    // Chart data from Django
     const monthlyData = {{ monthly_data|safe }};
-    const monthlyInjuriesDetail = {{ monthly_injuries_detail|safe }};
-    const injuryTypeData = {{ injury_type_data|safe }};
-    const injuryTypeDetails = {{ injury_type_details|safe }};
     const bodyPartData = {{ body_part_data|safe }};
-    const bodyPartDetails = {{ body_part_details|safe }};
-    const severityData = {{ severity_data|safe }};
-    const avgRecoveryTime = {{ avg_recovery_time|default:"0" }};
 
-    // Calculate total injuries from monthly data
-    const totalInjuriesFromMonthly = monthlyData.reduce((sum, item) => sum + (item.count || 0), 0);
-
-    // Helper function to get month name
-    function getMonthName(monthNum) {
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return monthNames[monthNum - 1];
+    function getMonthName(n) {
+      return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][n-1];
     }
 
-    // Monthly Trends Chart - Shows ALL injuries including recovered ones with player details
+    // Monthly Trends
     const monthlyCanvas = document.getElementById('monthlyTrendsChart');
-    if (monthlyCanvas) {
-      const monthlyCtx = monthlyCanvas.getContext('2d');
-      new Chart(monthlyCtx, {
+    if (monthlyCanvas && monthlyData && monthlyData.length > 0) {
+      new Chart(monthlyCanvas.getContext('2d'), {
         type: 'line',
         data: {
           labels: monthlyData.map(item => getMonthName(item.month)),
@@ -566,115 +347,16 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              callbacks: {
-                title: function(context) {
-                  const monthIndex = context[0].dataIndex;
-                  const monthData = monthlyInjuriesDetail[monthIndex];
-                  return getMonthName(monthData.month) + ' - ' + monthData.injuries.length + ' injury(ies)';
-                },
-                label: function(context) {
-                  const monthIndex = context.dataIndex;
-                  const monthData = monthlyInjuriesDetail[monthIndex];
-                  if (monthData && monthData.injuries && monthData.injuries.length > 0) {
-                    const injuries = monthData.injuries;
-                    const labels = injuries.map(inj => {
-                      return `${inj.player}: ${inj.injury_type} (${inj.body_part}) - ${inj.status}`;
-                    });
-                    return labels;
-                  }
-                  return 'Injuries: ' + context.parsed.y;
-                },
-                afterBody: function(context) {
-                  const monthIndex = context[0].dataIndex;
-                  const monthData = monthlyInjuriesDetail[monthIndex];
-                  if (monthData && monthData.injuries && monthData.injuries.length > 0) {
-                    return ['Hover or click to see details in table below'];
-                  }
-                  return [];
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1
-              }
-            }
-          }
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
       });
     }
 
-    // Injury Types Chart - Shows ALL injuries including recovered with player details
-    const injuryTypesCanvas = document.getElementById('injuryTypesChart');
-    if (injuryTypesCanvas && injuryTypeData && injuryTypeData.length > 0) {
-      const injuryTypesCtx = injuryTypesCanvas.getContext('2d');
-      new Chart(injuryTypesCtx, {
-        type: 'doughnut',
-        data: {
-          labels: injuryTypeData.map(item => item.injury_type__name),
-          datasets: [{
-            data: injuryTypeData.map(item => item.count),
-            backgroundColor: [
-              '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
-              '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1'
-            ],
-            borderWidth: 2,
-            borderColor: '#fff'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom'
-            },
-            tooltip: {
-              callbacks: {
-                title: function(context) {
-                  const injuryType = context[0].label;
-                  const details = injuryTypeDetails[injuryType] || [];
-                  return injuryType + ' (' + details.length + ' injury/ies)';
-                },
-                label: function(context) {
-                  const injuryType = context.label;
-                  const details = injuryTypeDetails[injuryType] || [];
-                  const value = context.parsed || 0;
-                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                  const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                  
-                  if (details.length > 0) {
-                    const playerList = details.slice(0, 3).map(inj => `• ${inj.player} (${inj.body_part})`);
-                    const moreText = details.length > 3 ? `\n... and ${details.length - 3} more` : '';
-                    return [
-                      `Count: ${value} (${percentage}%)`,
-                      'Players:',
-                      ...playerList,
-                      moreText
-                    ];
-                  }
-                  return injuryType + ': ' + value + ' (' + percentage + '%)';
-                }
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // Body Parts Chart - Shows ALL injuries including recovered with player details
+    // Body Parts Affected
     const bodyPartsCanvas = document.getElementById('bodyPartsChart');
     if (bodyPartsCanvas && bodyPartData && bodyPartData.length > 0) {
-      const bodyPartsCtx = bodyPartsCanvas.getContext('2d');
-      new Chart(bodyPartsCtx, {
+      new Chart(bodyPartsCanvas.getContext('2d'), {
         type: 'bar',
         data: {
           labels: bodyPartData.map(item => item.body_part__name),
@@ -689,95 +371,242 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              callbacks: {
-                title: function(context) {
-                  const bodyPart = context[0].label;
-                  const details = bodyPartDetails[bodyPart] || [];
-                  return bodyPart + ' (' + details.length + ' injury/ies)';
-                },
-                label: function(context) {
-                  const bodyPart = context.label;
-                  const details = bodyPartDetails[bodyPart] || [];
-                  const value = context.parsed.y;
-                  
-                  if (details.length > 0) {
-                    const playerList = details.slice(0, 3).map(inj => `• ${inj.player}: ${inj.injury_type}`);
-                    const moreText = details.length > 3 ? `\n... and ${details.length - 3} more` : '';
-                    return [
-                      `Count: ${value}`,
-                      'Players:',
-                      ...playerList,
-                      moreText
-                    ];
-                  }
-                  return value + ' injuries';
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                stepSize: 1
-              }
-            }
-          }
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
       });
     }
 
-    // Severity Chart - Shows ALL injuries including recovered
-    const severityCanvas = document.getElementById('severityChart');
-    if (severityCanvas && severityData && severityData.length > 0) {
-      const severityCtx = severityCanvas.getContext('2d');
-      new Chart(severityCtx, {
-    type: 'pie',
-    data: {
-      labels: severityData.map(item => item.severity__name),
-      datasets: [{
-        data: severityData.map(item => item.count),
-        backgroundColor: severityData.map(item => item.severity__color_code),
-        borderWidth: 2,
-        borderColor: '#fff'
-      }]
-    },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom'
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  const label = context.label || '';
-                  const value = context.parsed || 0;
-                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                  const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                  return label + ': ' + value + ' (' + percentage + '%)';
-                }
-              }
-            }
-          }
+    // Client-side pagination for KPI tables (10 rows per page)
+    const PAGE_SIZE = 10;
+    document.querySelectorAll('table.kpi-paginated').forEach(function(table) {
+      const tbody = table.querySelector('tbody');
+      const rows = Array.from(tbody.querySelectorAll('tr.data-row'));
+      const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+      const tableId = table.getAttribute('data-table-id');
+      const pager = document.getElementById('pager-' + tableId);
+      let currentPage = 1;
+
+      function render() {
+        rows.forEach((tr, i) => {
+          const start = (currentPage - 1) * PAGE_SIZE;
+          const end = start + PAGE_SIZE;
+          tr.style.display = (i >= start && i < end) ? '' : 'none';
+        });
+        if (pager) {
+          pager.innerHTML = '';
+          if (totalPages <= 1) return;
+          const prev = document.createElement('button');
+          prev.className = 'btn btn-sm btn-outline-secondary me-2';
+          prev.textContent = 'Prev';
+          prev.disabled = currentPage === 1;
+          prev.onclick = () => { currentPage--; render(); };
+          pager.appendChild(prev);
+
+          const info = document.createElement('span');
+          info.className = 'me-2 small text-muted';
+          info.textContent = 'Page ' + currentPage + ' of ' + totalPages;
+          pager.appendChild(info);
+
+          const next = document.createElement('button');
+          next.className = 'btn btn-sm btn-outline-secondary';
+          next.textContent = 'Next';
+          next.disabled = currentPage === totalPages;
+          next.onclick = () => { currentPage++; render(); };
+          pager.appendChild(next);
         }
-      });
-    }
-  }); // End of DOMContentLoaded
+      }
+      render();
+    });
+
+    // Rotate chevron when KPI block expands
+    document.querySelectorAll('.kpi-block').forEach(function(block) {
+      const targetSel = block.getAttribute('data-bs-target');
+      const target = document.querySelector(targetSel);
+      if (!target) return;
+      target.addEventListener('show.bs.collapse', () => block.classList.add('open'));
+      target.addEventListener('hide.bs.collapse', () => block.classList.remove('open'));
+    });
+  });
 </script>
 
 <style>
-  .avatar-sm {
-    width: 40px;
-    height: 40px;
-    font-size: 14px;
-    font-weight: 600;
+  .kpi-block { cursor: pointer; user-select: none; }
+  .kpi-block .toggle-chevron { transition: transform 0.25s ease; font-size: 1.25rem; color: #64748b; }
+  .kpi-block.open .toggle-chevron { transform: rotate(180deg); }
+
+  /* Body Map */
+  .svg-wrap { background:#fff; border-radius:10px; padding:10px; }
+  #bodySVG  { width:100%; height:auto; display:block; }
+  .body-region {
+    fill:#c8d0e0; stroke:#8896b0; stroke-width:1;
+    stroke-linejoin:round; stroke-linecap:round;
+    cursor:pointer; transition: fill 0.18s, filter 0.15s, stroke 0.15s;
   }
+  .body-region:hover {
+    filter: brightness(1.15) drop-shadow(0 0 4px rgba(11,118,239,0.5));
+  }
+  .body-region.sel {
+    stroke:#0b76ef !important; stroke-width:2px !important;
+    filter: drop-shadow(0 0 6px rgba(11,118,239,0.8));
+  }
+  .guide {
+    fill:none; stroke:#8896b0; stroke-width:0.9;
+    stroke-linejoin:round; stroke-linecap:round;
+    pointer-events:none;
+  }
+  .label-txt {
+    font-size:10px; fill:#64748b; text-anchor:middle;
+    font-family: Arial, Helvetica, sans-serif;
+    pointer-events:none;
+  }
+  .h-none   { fill:#c8d0e0; }
+  .h-low    { fill:#fcd34d; }
+  .h-medium { fill:#f97316; }
+  .h-high   { fill:#ef4444; }
+
+  .tip {
+    position:fixed; background:#1e293b; color:#fff;
+    padding:5px 12px; border-radius:7px; font-size:12px; font-weight:500;
+    pointer-events:none; z-index:9999; opacity:0; transition: opacity 0.1s;
+    white-space:nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .tip.on { opacity:1; }
+
+  .ldot { width:11px; height:11px; border-radius:50%; display:inline-block; flex-shrink:0; }
+
+  .rnum {
+    width:22px; height:22px; border-radius:50%; background:#0b76ef;
+    color:#fff; font-size:10px; font-weight:700;
+    display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .bpr {
+    cursor:pointer; border-radius:7px; padding:7px 10px;
+    margin-bottom:3px; transition: background 0.12s;
+  }
+  .bpr:hover { background:#f1f5f9; }
+  .bpr.on    { background:#dbeafe; }
+  .ibar {
+    height:5px; border-radius:3px; background:#e2e8f0;
+    overflow:hidden; margin-top:3px;
+  }
+  .ibf  { height:100%; border-radius:3px; transition: width 0.35s; }
+
+  .infobox {
+    background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;
+    padding:14px; margin-top:10px; display:none;
+  }
+  .infobox.on { display:block; }
+  .injsec     { display:none; margin-top:16px; }
+  .injsec.on  { display:block; }
+
+  .spill { padding:2px 8px; border-radius:9999px; font-size:11px; font-weight:500; }
+  .sa { background:#fef3c7; color:#92400e; }
+  .sr { background:#dbeafe; color:#1e40af; }
+  .sc { background:#d1fae5; color:#065f46; }
 </style>
+
+<script>
+(function() {
+  // Real data from Django context
+  const bodyPartCounts = {{ body_part_counts_json|safe }};
+  const INJURY_LIST_URL = "{% url 'tracking:injury_list' %}";
+
+  // Build data object compatible with body-map logic
+  const data = {};
+  Object.keys(bodyPartCounts).forEach(k => {
+    data[k] = { count: bodyPartCounts[k].count };
+  });
+
+  let sel = null;
+
+  const hc = c => c===0?'h-none':c<=2?'h-low':c<=5?'h-medium':'h-high';
+  const bc = c => c===0?'#cbd5e1':c<=2?'#fcd34d':c<=5?'#f97316':'#ef4444';
+
+  function renderSVG() {
+    document.querySelectorAll('.body-region').forEach(el => {
+      const part = el.dataset.part;
+      const c = (data[part]||{count:0}).count;
+      el.classList.remove('h-none','h-low','h-medium','h-high','sel');
+      el.classList.add(hc(c));
+      if (sel && part === sel) el.classList.add('sel');
+    });
+  }
+
+  function renderList() {
+    const sorted = Object.entries(data)
+      .filter(([,v]) => v.count > 0)
+      .sort((a,b) => b[1].count - a[1].count);
+    const max = sorted.length ? sorted[0][1].count : 1;
+    const el = document.getElementById('bpList');
+    if (!el) return;
+    el.innerHTML = sorted.length
+      ? sorted.map(([part,d],i) => `
+          <div class="bpr d-flex align-items-center gap-2 ${sel===part?'on':''}" data-bp-part="${part}">
+            <span class="rnum">${i+1}</span>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between">
+                <span class="fw-semibold small">${part}</span>
+                <span class="small fw-bold" style="color:${bc(d.count)}">${d.count}</span>
+              </div>
+              <div class="ibar"><div class="ibf" style="width:${(d.count/max)*100}%;background:${bc(d.count)}"></div></div>
+            </div>
+          </div>`).join('')
+      : '<p class="text-muted small mb-0">No injuries recorded for this period.</p>';
+    el.querySelectorAll('.bpr').forEach(row =>
+      row.addEventListener('click', () => pick(row.dataset.bpPart))
+    );
+  }
+
+  function renderInfo(part) {
+    const d = bodyPartCounts[part]; if (!d) return;
+    document.getElementById('infoTitle').textContent = part;
+    document.getElementById('infoBadge').textContent =
+      `${d.count} injur${d.count===1?'y':'ies'}`;
+    document.getElementById('infoStatus').innerHTML =
+      `<span class="spill sa me-1">Active: ${d.active}</span>
+       <span class="spill sr me-1">Recovering: ${d.recovering}</span>
+       <span class="spill sc">Recovered: ${d.recovered}</span>`;
+    document.getElementById('infoBox').classList.add('on');
+  }
+
+  function renderLink(part) {
+    document.getElementById('tblTitle').textContent = part;
+    const link = document.getElementById('bpInjuryLink');
+    link.href = INJURY_LIST_URL + '?body_part=' + encodeURIComponent(part);
+    document.getElementById('injSec').classList.add('on');
+  }
+
+  function pick(part) {
+    if (sel === part) { clearSel(); return; }
+    sel = part;
+    renderSVG(); renderList(); renderInfo(part); renderLink(part);
+  }
+
+  function clearSel() {
+    sel = null;
+    renderSVG(); renderList();
+    document.getElementById('infoBox').classList.remove('on');
+    document.getElementById('injSec').classList.remove('on');
+  }
+
+  // Tooltip + click on SVG regions
+  const tip = document.getElementById('bodyMapTip');
+  document.querySelectorAll('.body-region').forEach(el => {
+    el.addEventListener('mousemove', e => {
+      const part = el.dataset.part;
+      const c = (data[part]||{count:0}).count;
+      tip.textContent = `${part}: ${c} injur${c===1?'y':'ies'}`;
+      tip.classList.add('on');
+      tip.style.left = (e.clientX - tip.offsetWidth/2) + 'px';
+      tip.style.top  = (e.clientY - 36) + 'px';
+    });
+    el.addEventListener('mouseleave', () => tip.classList.remove('on'));
+    el.addEventListener('click', () => pick(el.dataset.part));
+  });
+
+  renderSVG();
+  renderList();
+})();
+</script>
 {% endblock %}

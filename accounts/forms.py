@@ -165,6 +165,159 @@ class PlayerProfileForm(forms.ModelForm):
             raise forms.ValidationError("Year of study must be between 1 and 10.")
         return year
 
+class PlayerRegisterStep1Form(forms.Form):
+    """Step 1 of player registration: name, UWindsor email, student ID, photo, password."""
+    first_name = forms.CharField(
+        max_length=30, required=True, label="Preferred First Name",
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
+    last_name = forms.CharField(
+        max_length=30, required=True, label="Preferred Last Name",
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
+    email = forms.EmailField(
+        required=True, label="UWindsor Email",
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'you@uwindsor.ca',
+        }),
+        help_text="Must end with @uwindsor.ca (or @athlete/@coach/@doctor.uwindsor.ca).",
+    )
+    student_id = forms.CharField(
+        max_length=20, required=True, label="Student ID",
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
+    phone = forms.CharField(
+        max_length=20, required=False, label="Phone Number",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 'type': 'tel',
+            'placeholder': 'e.g. 519-555-0123',
+        }),
+    )
+    profile_picture = forms.ImageField(
+        required=False, label="Profile Photo",
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+        help_text="Optional. A default avatar is used if blank.",
+    )
+    password1 = forms.CharField(
+        required=True, label="Password",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        min_length=8,
+    )
+    password2 = forms.CharField(
+        required=True, label="Confirm Password",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+    )
+
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        if not email.endswith('.uwindsor.ca') and not email.endswith('@uwindsor.ca'):
+            raise forms.ValidationError("Use your UWindsor email address (ends with @uwindsor.ca).")
+        if CustomUser.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("An account with this email already exists.")
+        return email
+
+    def clean(self):
+        cleaned = super().clean()
+        p1, p2 = cleaned.get('password1'), cleaned.get('password2')
+        if p1 and p2 and p1 != p2:
+            self.add_error('password2', "Passwords do not match.")
+        return cleaned
+
+
+SPORT_CHOICES = [
+    ('', 'Select a sport'),
+    ('Ice Hockey', 'Ice Hockey'),
+    ('Soccer', 'Soccer'),
+    ('Football', 'Football'),
+    ('Basketball', 'Basketball'),
+    ('Volleyball', 'Volleyball'),
+    ('Track & Field', 'Track & Field'),
+    ('Swimming', 'Swimming'),
+    ('Other', 'Other'),
+]
+
+YEAR_OF_ELIGIBILITY_CHOICES = [
+    ('', 'Select year'),
+    (1, '1st year'),
+    (2, '2nd year'),
+    (3, '3rd year'),
+    (4, '4th year'),
+    (5, '5th year'),
+]
+
+
+class PlayerRegisterStep2Form(forms.ModelForm):
+    """Step 2 of player registration: athletic identity only.
+
+    Personal / family / school-history fields are intentionally NOT collected here.
+    Those fields still exist on the PlayerProfile model (kept for data preservation)
+    but are no longer surfaced in player-facing UI.
+    """
+    team = forms.ModelChoiceField(
+        queryset=Team.objects.all(),
+        required=True, empty_label="Select your team",
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label="Team",
+    )
+    sport_gender_category = forms.ChoiceField(
+        choices=SPORT_CHOICES, required=True, label="Sport",
+        widget=forms.Select(attrs={'class': 'form-control'}),
+    )
+    year_of_study = forms.TypedChoiceField(
+        choices=YEAR_OF_ELIGIBILITY_CHOICES, required=False,
+        coerce=int, empty_value=None, label="Year of Eligibility",
+        widget=forms.Select(attrs={'class': 'form-control'}),
+    )
+
+    class Meta:
+        model = PlayerProfile
+        fields = [
+            'sport_gender_category', 'year_of_study', 'number',
+            'height_feet', 'height_inches', 'weight_lbs',
+        ]
+        widgets = {
+            'number': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'Jersey #'}),
+            'height_feet': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+            'height_inches': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'max': 11}),
+            'weight_lbs': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+        }
+        labels = {
+            'number': 'Jersey Number',
+            'height_feet': 'Height (ft)',
+            'height_inches': 'Height (in)',
+            'weight_lbs': 'Weight (lbs)',
+        }
+
+
+class PlayerSelfPersonalForm(forms.ModelForm):
+    """Editable personal section on the player's own profile page."""
+    class Meta:
+        model = CustomUser
+        fields = ('first_name', 'last_name', 'phone', 'profile_picture')
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={
+                'class': 'form-control', 'type': 'tel',
+                'placeholder': 'e.g. 519-555-0123',
+            }),
+            'profile_picture': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+        }
+        labels = {
+            'first_name': 'Preferred First Name',
+            'last_name': 'Last Name',
+            'phone': 'Phone Number',
+            'profile_picture': 'Profile Photo',
+        }
+
+
+class PlayerSelfSportForm(PlayerRegisterStep2Form):
+    """Same shape as registration step 2 — reused for profile editing."""
+    # team optional in profile edit if they already have one — keep required for simplicity.
+    pass
+
+
 class CoachProfileForm(forms.ModelForm):
     class Meta:
         model = CoachProfile

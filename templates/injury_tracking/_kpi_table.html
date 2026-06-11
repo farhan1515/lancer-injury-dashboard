@@ -1,0 +1,53 @@
+{# Reusable KPI injury table with JS pagination. Vars: table_id, injuries, title #}
+<div class="card mb-3">
+  <div class="card-header">
+    <h6 class="card-title mb-0">
+      <i class="bi bi-list-ul me-2"></i>{{ title }}
+      <small class="text-muted ms-2">({{ injuries|length }} record{{ injuries|length|pluralize }})</small>
+    </h6>
+  </div>
+  <div class="card-body">
+    {% if injuries %}
+      <div class="table-responsive">
+        <table class="table table-hover table-striped kpi-paginated" data-table-id="{{ table_id }}">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Injury Date</th>
+              <th>Injury Type</th>
+              <th>Body Part</th>
+              <th>Recovery Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for injury in injuries %}
+              <tr class="data-row">
+                <td>
+                  <strong>{{ injury.player.get_full_name|default:injury.player.username }}</strong>
+                  {% if injury.player.team %}
+                    <br><small class="text-muted">{{ injury.player.team.name }}</small>
+                  {% endif %}
+                </td>
+                <td>{{ injury.injury_date|date:"M d, Y" }}</td>
+                <td>{{ injury.injury_type.name }}</td>
+                <td>{{ injury.body_part.name }}</td>
+                <td>
+                  {% if injury.actual_recovery_time %}
+                    {{ injury.actual_recovery_time }} days
+                  {% elif injury.estimated_recovery_time %}
+                    Est: {{ injury.estimated_recovery_time }} days
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div id="pager-{{ table_id }}" class="d-flex align-items-center justify-content-end mt-2"></div>
+    {% else %}
+      <p class="text-muted text-center mb-0">No injuries to display.</p>
+    {% endif %}
+  </div>
+</div>

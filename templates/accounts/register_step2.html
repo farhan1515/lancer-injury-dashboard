@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Register - Step {{ step }} of {{ total_steps }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+      <div class="card">
+        <div class="card-body p-4">
+          <h3 class="mb-1"><i class="bi bi-trophy me-2"></i>Sport &amp; Team</h3>
+          <p class="text-muted small mb-3">
+            Step {{ step }} of {{ total_steps }} — Welcome, {{ first_name }}! Quick athletic-identity details.
+          </p>
+
+          <div class="progress mb-4" style="height: 6px;">
+            <div class="progress-bar" role="progressbar" style="width: 100%;"></div>
+          </div>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">{{ form.sport_gender_category.label }}</label>
+                {{ form.sport_gender_category }}
+                {{ form.sport_gender_category.errors }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ form.team.label }}</label>
+                {{ form.team }}
+                {{ form.team.errors }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ form.year_of_study.label }}</label>
+                {{ form.year_of_study }}
+                {{ form.year_of_study.errors }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ form.number.label }}</label>
+                {{ form.number }}
+                {{ form.number.errors }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">{{ form.height_feet.label }}</label>
+                {{ form.height_feet }}
+                {{ form.height_feet.errors }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">{{ form.height_inches.label }}</label>
+                {{ form.height_inches }}
+                {{ form.height_inches.errors }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ form.weight_lbs.label }}</label>
+                {{ form.weight_lbs }}
+                {{ form.weight_lbs.errors }}
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-4">
+              <a href="{% url 'register' %}" class="btn btn-link text-muted">
+                <i class="bi bi-arrow-left me-1"></i>Back
+              </a>
+              <button type="submit" class="btn btn-primary">
+                Finish &amp; Go to Dashboard <i class="bi bi-check2 ms-1"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

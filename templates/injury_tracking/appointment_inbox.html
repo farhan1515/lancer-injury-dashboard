@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Appointments - Lancer Injury Tracking{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <div class="widget-icon primary me-3"><i class="bi bi-calendar-check"></i></div>
+            <div>
+              <h1 class="card-title mb-1">Appointment Inbox</h1>
+              <p class="text-muted mb-0">Confirm or cancel player requests</p>
+            </div>
+          </div>
+          <div class="btn-group" role="group">
+            <a href="?status=PENDING"   class="btn btn-sm {% if status_filter == 'PENDING' %}btn-warning{% else %}btn-outline-warning{% endif %}">Pending</a>
+            <a href="?status=CONFIRMED" class="btn btn-sm {% if status_filter == 'CONFIRMED' %}btn-success{% else %}btn-outline-success{% endif %}">Confirmed</a>
+            <a href="?status=CANCELLED" class="btn btn-sm {% if status_filter == 'CANCELLED' %}btn-danger{% else %}btn-outline-danger{% endif %}">Cancelled</a>
+            <a href="?status=ALL"       class="btn btn-sm {% if status_filter == 'ALL' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">All</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      {% if appointments %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Date</th>
+                <th>Time Slot</th>
+                <th>Note</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in appointments %}
+                <tr>
+                  <td>
+                    <strong>{{ a.player.get_full_name|default:a.player.username }}</strong>
+                    {% if a.team %}<br><small class="text-muted">{{ a.team.name }}</small>{% endif %}
+                  </td>
+                  <td>{{ a.preferred_date|date:"l, M d, Y" }}</td>
+                  <td><small>{{ a.get_preferred_time_slot_display }}</small></td>
+                  <td><small>{{ a.note|default:"—"|truncatechars:80 }}</small></td>
+                  <td>
+                    <span class="badge
+                      {% if a.status == 'CONFIRMED' %}bg-success
+                      {% elif a.status == 'CANCELLED' %}bg-danger
+                      {% elif a.status == 'COMPLETED' %}bg-secondary
+                      {% else %}bg-warning text-dark{% endif %}">
+                      {{ a.get_status_display }}
+                    </span>
+                  </td>
+                  <td class="text-end">
+                    {% if a.status == 'PENDING' %}
+                      <form method="post" action="{% url 'tracking:appointment_decide' a.pk 'confirm' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-success"><i class="bi bi-check2"></i> Confirm</button>
+                      </form>
+                      <form method="post" action="{% url 'tracking:appointment_decide' a.pk 'cancel' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i> Cancel</button>
+                      </form>
+                    {% elif a.status == 'CONFIRMED' %}
+                      <form method="post" action="{% url 'tracking:appointment_decide' a.pk 'cancel' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i> Cancel</button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+          No appointments to display.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -37,6 +37,13 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'lancer_project.urls'
 
+# Friendly CSRF failure: redirect with a flash message instead of the debug 403 page.
+CSRF_FAILURE_VIEW = 'accounts.views.csrf_failure'
+# Keep the CSRF cookie alive for ~1 year (default), but make sure it survives
+# browser restarts in development.
+CSRF_COOKIE_AGE = 60 * 60 * 24 * 365  # 1 year
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 14  # 2 weeks
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

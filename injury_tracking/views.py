@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
-from django.db.models import Q, Count, Avg
+from django.db.models import Q, Count, Avg, Sum
 from django.http import JsonResponse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django.urls import reverse_lazy
@@ -12,9 +12,11 @@ from datetime import datetime, timedelta
 import json
 
 from .models import (
-    InjuryRecord, InjuryType, BodyPart, InjurySeverity, 
-    InjuryFollowUp, TeamRoster, InjuryAnalytics, Event
+    InjuryRecord, InjuryType, BodyPart, InjurySeverity,
+    InjuryFollowUp, TeamRoster, InjuryAnalytics, Event, Appointment
 )
+from accounts.models import Notification
+from accounts.utils import notify
 from .forms import (
     InjuryReportForm, InjuryUpdateForm, InjuryFollowUpForm,
     PlayerProfileForm, TeamRosterForm, InjurySearchForm, EventForm
@@ -133,6 +135,12 @@ def event_create(request):
                     messages.error(request, 'You do not have permission to create events for the selected team.')
                     return render(request, 'injury_tracking/event_form.html', {'form': form})
             event = form.save()
+            # Fan-out notification to all players on the team
+            link = str(reverse_lazy('tracking:event_detail', kwargs={'pk': event.id}))
+            for player in CustomUser.objects.filter(role='PLAYER', team=event.team):
+                notify(player,
+                       f"New {event.get_event_type_display()}: {event.title} on {event.start_datetime:%b %d, %I:%M %p}",
+                       notification_type='EVENT', link=link)
             messages.success(request, 'Event created successfully.')
             return redirect('tracking:event_detail', pk=event.id)
     else:
@@ -388,30 +396,357 @@ def player_dashboard(request):
         return redirect('dashboard')
     
     user = request.user
-    
-    # Get player's injury history
-    injuries = InjuryRecord.objects.filter(player=user).select_related(
-        'injury_type', 'severity', 'reported_by'
+    today = timezone.now().date()
+
+    # Player's injury history (used by Injuries tab and Home injury status widget)
+    all_injuries = InjuryRecord.objects.filter(player=user).select_related(
+        'injury_type', 'body_part', 'severity', 'reported_by'
     ).order_by('-injury_date')
-    
-    # Get active injuries
-    active_injuries = injuries.filter(status='ACTIVE')
-    
-    # Get recovery statistics
-    recovered_injuries = injuries.filter(status='RECOVERED')
-    total_injuries = injuries.count()
-    avg_recovery_time = recovered_injuries.aggregate(
-        avg_time=Avg('actual_recovery_time')
-    )['avg_time']
-    
+    current_injuries = all_injuries.exclude(status='RECOVERED')
+    past_injuries = all_injuries.filter(status='RECOVERED')
+
+    # Legacy aliases kept so the existing template stays functional until rewrite
+    active_injuries = all_injuries.filter(status='ACTIVE')
+    total_injuries = all_injuries.count()
+    avg_recovery_time = past_injuries.aggregate(avg_time=Avg('actual_recovery_time'))['avg_time']
+
+    # Upcoming appointments for Home + Appointments tab
+    upcoming_appointments = Appointment.objects.filter(
+        player=user,
+        preferred_date__gte=today,
+    ).exclude(status='CANCELLED').select_related('therapist', 'team').order_by('preferred_date')
+
+    # Upcoming team events for Home + Events tab
+    upcoming_events = []
+    if getattr(user, 'team', None):
+        upcoming_events = Event.objects.filter(
+            team=user.team,
+            end_datetime__gte=timezone.now(),
+        ).order_by('start_datetime')[:10]
+
+    # Notifications
+    unread_notifications = Notification.objects.filter(user=user, is_read=False).count()
+
+    # Body parts for the manual selector in the report-injury wizard
+    body_parts = BodyPart.objects.all().order_by('name')
+
+    # ---------- Clearance status widget ----------
+    total_count = all_injuries.count()
+    active_count_player = active_injuries.count()
+    recovering_count_player = all_injuries.filter(status='RECOVERING').count()
+    recovered_count_player = past_injuries.count()
+
+    if total_count == 0:
+        clearance = {
+            'state': 'ok',
+            'title': 'All Clear',
+            'subtitle': 'No injuries on record',
+            'icon': 'bi-check-circle-fill',
+            'border_color': '#10b981',
+            'icon_color': '#10b981',
+            'bg_color': 'rgba(16, 185, 129, 0.10)',
+            'clearance_date': None,
+            'foot_note': '',
+        }
+    elif active_count_player > 0:
+        clearance = {
+            'state': 'active',
+            'title': 'Not Cleared to Play',
+            'subtitle': f"You have {active_count_player} active "
+                        f"{'injury' if active_count_player == 1 else 'injuries'} requiring attention",
+            'icon': 'bi-x-circle-fill',
+            'border_color': '#ef4444',
+            'icon_color': '#ef4444',
+            'bg_color': 'rgba(239, 68, 68, 0.10)',
+            'clearance_date': None,
+            'foot_note': 'A therapist must review and clear you before returning to play.',
+        }
+    elif recovering_count_player > 0:
+        clearance = {
+            'state': 'recovering',
+            'title': 'Recovery in Progress',
+            'subtitle': f"You have {recovering_count_player} "
+                        f"{'injury' if recovering_count_player == 1 else 'injuries'} being monitored",
+            'icon': 'bi-exclamation-triangle-fill',
+            'border_color': '#f59e0b',
+            'icon_color': '#f59e0b',
+            'bg_color': 'rgba(245, 158, 11, 0.10)',
+            'clearance_date': None,
+            'foot_note': 'Contact your therapist if symptoms worsen.',
+        }
+    else:
+        # All injuries are RECOVERED
+        last_cleared = past_injuries.filter(
+            medical_clearance=True, clearance_date__isnull=False
+        ).order_by('-clearance_date').first()
+        clearance = {
+            'state': 'ok',
+            'title': 'Cleared to Play',
+            'subtitle': 'All injuries resolved — medical clearance granted',
+            'icon': 'bi-check-circle-fill',
+            'border_color': '#10b981',
+            'icon_color': '#10b981',
+            'bg_color': 'rgba(16, 185, 129, 0.10)',
+            'clearance_date': last_cleared.clearance_date if last_cleared else None,
+            'foot_note': '',
+        }
+
+    # ---------- Season stats (missed games / practices / recovery days) ----------
+    current_year = today.year
+    season_injuries = InjuryRecord.objects.filter(
+        player=user, injury_date__year=current_year
+    )
+    total_missed_games = season_injuries.aggregate(s=Sum('missed_games'))['s'] or 0
+    total_missed_practices = season_injuries.aggregate(s=Sum('missed_practices'))['s'] or 0
+    active_recovery_days = InjuryRecord.objects.filter(player=user).exclude(
+        status='RECOVERED'
+    ).aggregate(s=Sum('estimated_recovery_time'))['s'] or 0
+
     context = {
-        'injuries': injuries,
-        'active_injuries': active_injuries,
+        # Injury data
+        'all_injuries': all_injuries,
+        'current_injuries': current_injuries,
+        'past_injuries': past_injuries,
+        'active_injuries': active_injuries,     # legacy alias
+        'injuries': all_injuries,               # legacy alias
         'total_injuries': total_injuries,
         'avg_recovery_time': avg_recovery_time,
+        # New tabs
+        'upcoming_appointments': upcoming_appointments,
+        'upcoming_events': upcoming_events,
+        'unread_notifications': unread_notifications,
+        'body_parts': body_parts,
+        # Clearance + season stats
+        'clearance': clearance,
+        'total_missed_games': total_missed_games,
+        'total_missed_practices': total_missed_practices,
+        'active_recovery_days': active_recovery_days,
     }
-    
+
     return render(request, 'accounts/player_dashboard.html', context)
+
+# ---------------- Doctor: pending self-reported injuries ----------------
+
+@login_required
+def pending_review_inbox(request):
+    """Doctor inbox of self-reported injuries awaiting triage."""
+    if request.user.role not in ['ADMIN', 'DOCTOR']:
+        messages.error(request, "Doctor access required.")
+        return redirect('dashboard')
+
+    pending = InjuryRecord.objects.filter(
+        self_reported=True, status='ACTIVE'
+    ).select_related('player', 'body_part', 'injury_type', 'severity').order_by('-reported_date')
+
+    return render(request, 'injury_tracking/pending_review_inbox.html', {
+        'pending': pending,
+    })
+
+
+# ---------------- Coach / Doctor: appointment inbox ----------------
+
+def _appointments_in_scope(user):
+    """Appointments the given user is allowed to see/act on."""
+    qs = Appointment.objects.select_related('player', 'therapist', 'team').order_by('preferred_date')
+    if user.role == 'ADMIN':
+        return qs
+    teams = list(user.get_authorized_teams()) if hasattr(user, 'get_authorized_teams') else []
+    if user.team and user.team not in teams:
+        teams.append(user.team)
+    if not teams:
+        return qs.none()
+    return qs.filter(team__in=teams)
+
+
+@login_required
+def appointment_inbox(request):
+    """List of appointments for the user's authorized team(s)."""
+    if request.user.role not in ['ADMIN', 'COACH', 'DOCTOR']:
+        messages.error(request, "Access denied.")
+        return redirect('dashboard')
+    status_filter = request.GET.get('status', 'PENDING')
+    qs = _appointments_in_scope(request.user)
+    if status_filter and status_filter != 'ALL':
+        qs = qs.filter(status=status_filter)
+    return render(request, 'injury_tracking/appointment_inbox.html', {
+        'appointments': qs,
+        'status_filter': status_filter,
+    })
+
+
+@login_required
+def appointment_decide(request, pk, decision):
+    """Confirm or cancel an appointment; notifies the player."""
+    if request.user.role not in ['ADMIN', 'COACH', 'DOCTOR']:
+        messages.error(request, "Access denied.")
+        return redirect('dashboard')
+    if decision not in ('confirm', 'cancel'):
+        messages.error(request, "Invalid action.")
+        return redirect('tracking:appointment_inbox')
+
+    appt = get_object_or_404(_appointments_in_scope(request.user), pk=pk)
+
+    if decision == 'confirm':
+        appt.status = 'CONFIRMED'
+        if not appt.therapist and request.user.role == 'DOCTOR':
+            appt.therapist = request.user
+        if not appt.confirmed_datetime:
+            appt.confirmed_datetime = timezone.now()
+        appt.save()
+        notify(appt.player,
+               f"Your appointment on {appt.preferred_date:%b %d, %Y} ({appt.get_preferred_time_slot_display()}) was confirmed.",
+               notification_type='APPOINTMENT')
+        messages.success(request, f"Appointment for {appt.player.get_full_name()} confirmed.")
+    else:
+        appt.status = 'CANCELLED'
+        appt.save()
+        notify(appt.player,
+               f"Your appointment request for {appt.preferred_date:%b %d, %Y} was cancelled.",
+               notification_type='APPOINTMENT')
+        messages.info(request, f"Appointment for {appt.player.get_full_name()} cancelled.")
+    return redirect('tracking:appointment_inbox')
+
+
+# Player self-service flows
+
+def _default_injury_type():
+    return InjuryType.objects.get_or_create(name='Pending Review')[0]
+
+
+def _default_severity():
+    return InjurySeverity.objects.first() or InjurySeverity.objects.create(
+        name='Mild', color_code='#10b981', description='Minor injury'
+    )
+
+
+@login_required
+def player_report_injury_submit(request):
+    """Player self-reports an injury (3-step wizard posts here at the end)."""
+    if request.user.role != 'PLAYER':
+        messages.error(request, "Only players can self-report injuries.")
+        return redirect('dashboard')
+    if request.method != 'POST':
+        return redirect('tracking:player_dashboard')
+
+    body_part_id = request.POST.get('body_part_id')
+    body_part_name = (request.POST.get('body_part_name') or '').strip()
+    injury_date_str = request.POST.get('injury_date')
+    description = (request.POST.get('description') or '').strip()
+    context_type = request.POST.get('context_type', 'Other')
+    # contact_type: 'CONTACT', 'NON_CONTACT', or '' (Not Sure -> blank, therapist fills later)
+    contact_type = (request.POST.get('contact_type') or '').strip()
+
+    # Resolve body part: prefer explicit id, fall back to name match (from SVG click).
+    body_part = None
+    if body_part_id:
+        body_part = BodyPart.objects.filter(id=body_part_id).first()
+    if not body_part and body_part_name:
+        body_part = BodyPart.objects.filter(name__iexact=body_part_name).first()
+        if not body_part:
+            body_part = BodyPart.objects.create(name=body_part_name)
+
+    if not body_part or not injury_date_str or not description:
+        messages.error(request, "Please complete all required fields before submitting.")
+        return redirect('tracking:player_dashboard')
+
+    try:
+        injury_date = datetime.strptime(injury_date_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        messages.error(request, "Invalid injury date.")
+        return redirect('tracking:player_dashboard')
+
+    # Only set contact_type when player explicitly chose Contact/Non-Contact.
+    # 'Not Sure' (blank) leaves the model default in place for the therapist to set.
+    extra_kwargs = {}
+    if contact_type in ('CONTACT', 'NON_CONTACT'):
+        extra_kwargs['contact_type'] = contact_type
+
+    InjuryRecord.objects.create(
+        player=request.user,
+        reported_by=request.user,
+        injury_date=injury_date,
+        injury_type=_default_injury_type(),
+        body_part=body_part,
+        severity=_default_severity(),
+        status='ACTIVE',
+        description=f"{description}\n\nContext: {context_type}",
+        treatment='REST',
+        self_reported=True,
+        **extra_kwargs,
+    )
+    messages.success(
+        request,
+        'Injury reported successfully. A therapist will review your report shortly.',
+    )
+    return redirect('tracking:player_dashboard')
+
+
+@login_required
+def player_request_appointment_submit(request):
+    """Player books an appointment with their team therapist."""
+    if request.user.role != 'PLAYER':
+        messages.error(request, "Only players can request appointments.")
+        return redirect('dashboard')
+    if request.method != 'POST':
+        return redirect('tracking:player_dashboard')
+
+    preferred_date_str = request.POST.get('preferred_date')
+    preferred_time_slot = request.POST.get('preferred_time_slot')
+    note = (request.POST.get('note') or '').strip()
+
+    if not preferred_date_str or not preferred_time_slot:
+        messages.error(request, "Please pick a date and time slot.")
+        return redirect('tracking:player_dashboard')
+
+    try:
+        preferred_date = datetime.strptime(preferred_date_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        messages.error(request, "Invalid date.")
+        return redirect('tracking:player_dashboard')
+
+    if preferred_date < timezone.now().date():
+        messages.error(request, "Date cannot be in the past.")
+        return redirect('tracking:player_dashboard')
+
+    valid_slots = {k for k, _ in Appointment.TIME_SLOT_CHOICES}
+    if preferred_time_slot not in valid_slots:
+        messages.error(request, "Invalid time slot.")
+        return redirect('tracking:player_dashboard')
+
+    # Try to find a therapist (DOCTOR) linked to the player's team via TeamPermission
+    therapist = None
+    team = getattr(request.user, 'team', None)
+    if team:
+        from accounts.models import TeamPermission
+        tp = TeamPermission.objects.filter(
+            team=team, role_scope='DOCTOR'
+        ).select_related('user').first()
+        if tp:
+            therapist = tp.user
+        else:
+            therapist = CustomUser.objects.filter(role='DOCTOR', team=team).first()
+
+    appt = Appointment.objects.create(
+        player=request.user,
+        therapist=therapist,
+        team=team,
+        preferred_date=preferred_date,
+        preferred_time_slot=preferred_time_slot,
+        note=note,
+        status='PENDING',
+    )
+    # Notify the assigned therapist (if any) about the new request
+    if therapist:
+        notify(therapist,
+               f"New appointment request from {request.user.get_full_name() or request.user.username} "
+               f"for {appt.preferred_date:%b %d, %Y} ({appt.get_preferred_time_slot_display()}).",
+               notification_type='APPOINTMENT')
+    messages.success(
+        request,
+        'Request sent — your therapist will confirm shortly.',
+    )
+    return redirect('tracking:player_dashboard')
+
 
 # Injury Management Views
 class InjuryListView(LoginRequiredMixin, ListView):
@@ -510,38 +845,59 @@ class InjuryUpdateView(DoctorRequiredMixin, UpdateView):
     model = InjuryRecord
     form_class = InjuryUpdateForm
     template_name = 'injury_tracking/injury_update_form.html'
-    
+
     def form_valid(self, form):
+        # Snapshot pre-save state so we know what to notify about
+        old = InjuryRecord.objects.get(pk=form.instance.pk)
+        was_self_reported = old.self_reported
+        old_status = old.status
+        old_clearance = old.medical_clearance
+
         # Get medical clearance status from form
         medical_clearance = form.cleaned_data.get('medical_clearance', False)
         status = form.cleaned_data.get('status')
-        
+
         # Modify the instance directly (form.instance is a reference to the actual model instance)
         injury = form.instance
-        
+
         # If medical clearance is checked, automatically set status to RECOVERED if not already
         if medical_clearance and status != 'RECOVERED':
             injury.status = 'RECOVERED'
-        
+
         # Auto-calculate actual recovery time if status is RECOVERED or medical clearance is set
         if injury.status == 'RECOVERED' or medical_clearance:
             if not injury.actual_recovery_time:
                 recovery_days = (timezone.now().date() - injury.injury_date).days
                 if recovery_days > 0:
                     injury.actual_recovery_time = recovery_days
-            
-            # Auto-set clearance date if medical clearance is checked but date not set
             if medical_clearance and not injury.clearance_date:
                 injury.clearance_date = timezone.now().date()
-        
-        # Save the form (this will save the modified instance)
+
+        # A doctor touching a self-reported record means it has been triaged.
+        if was_self_reported:
+            injury.self_reported = False
+
         response = super().form_valid(form)
-        
-        # Prepare success messages
+
+        # ---- Notifications to the player ----
+        link = reverse_lazy('tracking:injury_detail', kwargs={'pk': injury.pk}).__str__()
+        if was_self_reported:
+            notify(injury.player,
+                   f"Your self-reported {injury.body_part.name} injury has been reviewed by a therapist.",
+                   notification_type='INJURY', link=link)
+        if medical_clearance and not old_clearance:
+            notify(injury.player,
+                   f"Medical clearance granted for your {injury.body_part.name} injury — you're cleared to play.",
+                   notification_type='CLEARANCE', link=link)
+        elif status and status != old_status:
+            notify(injury.player,
+                   f"Your {injury.body_part.name} injury status changed to {injury.get_status_display()}.",
+                   notification_type='INJURY', link=link)
+
         messages.success(self.request, f'Injury record for {injury.player.get_full_name()} has been updated successfully.')
         if medical_clearance:
             messages.info(self.request, 'Player has been medically cleared. Injury removed from active dashboard.')
-        
+
         return response
     
     def get_success_url(self):
@@ -608,7 +964,15 @@ def analytics_dashboard(request):
     # If no date range specified, filter by selected year
     if not date_from and not date_to:
         injuries_queryset = injuries_queryset.filter(injury_date__year=selected_year)
-    
+
+    # Additional filters: contact_type and status
+    contact_type_filter = request.GET.get('contact_type')
+    status_filter = request.GET.get('status')
+    if contact_type_filter:
+        injuries_queryset = injuries_queryset.filter(contact_type=contact_type_filter)
+    if status_filter:
+        injuries_queryset = injuries_queryset.filter(status=status_filter)
+
     # Status breakdown - show that ALL injuries including recovered are included
     status_breakdown = injuries_queryset.values('status').annotate(
         count=Count('id')
@@ -694,11 +1058,30 @@ def analytics_dashboard(request):
     severity_data = injuries_queryset.values('severity__name', 'severity__color_code').annotate(
         count=Count('id')
     ).order_by('-count')
+
+    # Body part counts (per-status) for the interactive Body Map component
+    body_part_counts_raw = injuries_queryset.values('body_part__name').annotate(
+        count=Count('id'),
+        active=Count('id', filter=Q(status='ACTIVE')),
+        recovering=Count('id', filter=Q(status='RECOVERING')),
+        recovered=Count('id', filter=Q(status='RECOVERED')),
+    )
+    body_part_counts = {
+        row['body_part__name']: {
+            'count': row['count'],
+            'active': row['active'],
+            'recovering': row['recovering'],
+            'recovered': row['recovered'],
+        }
+        for row in body_part_counts_raw if row['body_part__name']
+    }
     
     # Get all injuries with player details for detailed breakdown table
     all_injuries_detail = injuries_queryset.select_related(
         'player', 'injury_type', 'body_part', 'severity'
     ).order_by('-injury_date')
+    active_injuries_detail = all_injuries_detail.filter(status='ACTIVE')
+    recovered_injuries_detail = all_injuries_detail.filter(status='RECOVERED')
     
     # Recovery time analysis (only for recovered injuries with actual recovery time)
     recovered_injuries = injuries_queryset.filter(
@@ -737,6 +1120,10 @@ def analytics_dashboard(request):
             if not date_from and not date_to:
                 team_injuries = team_injuries.filter(injury_date__year=selected_year)
             
+            prev_year_injuries_count = InjuryRecord.objects.filter(
+                player__team=team,
+                injury_date__year=selected_year - 1,
+            ).count()
             team_comparison.append({
                 'team': team.name,
                 'total_injuries': team_injuries.count(),  # ALL injuries
@@ -744,6 +1131,9 @@ def analytics_dashboard(request):
                 'recovering_injuries': team_injuries.filter(status='RECOVERING').count(),
                 'recovered_injuries': team_injuries.filter(status='RECOVERED').count(),
                 'chronic_injuries': team_injuries.filter(status='CHRONIC').count(),
+                'missed_games': team_injuries.aggregate(s=Sum('missed_games'))['s'] or 0,
+                'missed_practices': team_injuries.aggregate(s=Sum('missed_practices'))['s'] or 0,
+                'prev_year_injuries': prev_year_injuries_count,
             })
     
     # Get available years for dropdown (from injury dates in database)
@@ -753,7 +1143,25 @@ def analytics_dashboard(request):
     )
     if not available_years:
         available_years = [timezone.now().year]
-    
+
+    # Contact type distribution
+    contact_type_label_map = dict(InjuryRecord.CONTACT_TYPE_CHOICES)
+    contact_type_counts = injuries_queryset.values('contact_type').annotate(count=Count('id'))
+    contact_type_lookup = {row['contact_type']: row['count'] for row in contact_type_counts}
+    contact_type_data = [
+        {'label': contact_type_label_map[key], 'count': contact_type_lookup.get(key, 0)}
+        for key in ('CONTACT', 'NON_CONTACT', 'OVERUSE')
+    ]
+
+    # Total missed games across filtered injuries
+    total_missed_games = injuries_queryset.aggregate(s=Sum('missed_games'))['s'] or 0
+
+    # Previous year for YoY chart
+    prev_year = selected_year - 1
+
+    # JSON serialization of team comparison for Chart.js
+    team_comparison_json = json.dumps(team_comparison)
+
     context = {
         'monthly_data': json.dumps(monthly_data),
         'monthly_injuries_detail': json.dumps(monthly_injuries_detail),  # Player details for monthly chart
@@ -779,6 +1187,16 @@ def analytics_dashboard(request):
         'status_breakdown': status_breakdown,
         # Detailed injury list with player information
         'all_injuries_detail': all_injuries_detail,
+        'active_injuries_detail': active_injuries_detail,
+        'recovered_injuries_detail': recovered_injuries_detail,
+        # New context for analytics_new.html
+        'contact_type_data': contact_type_data,
+        'body_part_counts_json': json.dumps(body_part_counts),
+        'team_comparison_json': team_comparison_json,
+        'total_missed_games': total_missed_games,
+        'prev_year': prev_year,
+        'contact_type': contact_type_filter,
+        'status': status_filter,
     }
     
     return render(request, 'injury_tracking/analytics.html', context)

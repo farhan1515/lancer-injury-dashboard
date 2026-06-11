@@ -19,6 +19,15 @@ urlpatterns = [
     
     # Analytics
     path('analytics/', views.analytics_dashboard, name='analytics'),
+
+    # Player self-service flows
+    path('player/report-injury/', views.player_report_injury_submit, name='player_report_injury_submit'),
+    path('player/request-appointment/', views.player_request_appointment_submit, name='player_request_appointment_submit'),
+
+    # Doctor / Coach inboxes
+    path('pending-reviews/', views.pending_review_inbox, name='pending_review_inbox'),
+    path('appointments/inbox/', views.appointment_inbox, name='appointment_inbox'),
+    path('appointments/<int:pk>/<str:decision>/', views.appointment_decide, name='appointment_decide'),
     
     # API endpoints
     path('api/player/<int:player_id>/injuries/', views.get_player_injuries, name='player_injuries_api'),
