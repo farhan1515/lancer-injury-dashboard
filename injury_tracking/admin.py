@@ -1,3 +1,4 @@
+
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import (
@@ -5,6 +6,7 @@ from .models import (
     InjuryFollowUp, TeamRoster, InjuryAnalytics, Event
 )
 
+#admin can register injury type such as name, description
 @admin.register(InjuryType)
 class InjuryTypeAdmin(admin.ModelAdmin):
     list_display = ['name', 'description']
