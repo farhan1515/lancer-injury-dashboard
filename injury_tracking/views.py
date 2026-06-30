@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.db.models import Q, Count, Avg, Sum
 from django.http import JsonResponse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.core.paginator import Paginator
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -297,29 +297,24 @@ def coach_dashboard(request):
     
     player_status = []
     for player in players:
-        active_injuries = InjuryRecord.objects.filter(
-            player=player, status='ACTIVE'
-        ).select_related('injury_type', 'severity')
-        
-        latest_injury = active_injuries.first()
-        
-        # Determine status color
-        if latest_injury:
-            if latest_injury.severity.name == 'Severe':
-                status_color = 'danger'
-            elif latest_injury.severity.name == 'Moderate':
-                status_color = 'warning'
-            else:
-                status_color = 'info'
-        else:
-            status_color = 'success'
-        
+        unresolved_injuries = InjuryRecord.objects.filter(
+            player=player, status__in=['ACTIVE', 'RECOVERING']
+        ).select_related('injury_type', 'severity').order_by('-injury_date', '-reported_date')
+        latest_unresolved_injury = unresolved_injuries.first()
+        total_injuries = InjuryRecord.objects.filter(player=player).count()
+        clear_to_play = latest_unresolved_injury is None
+        destination_url = (
+            reverse('tracking:injury_detail', kwargs={'pk': latest_unresolved_injury.pk})
+            if latest_unresolved_injury
+            else f"{reverse('tracking:injury_list')}?player={player.pk}"
+        )
+
         player_status.append({
             'player': player,
-            'active_injuries': active_injuries,
-            'latest_injury': latest_injury,
-            'status_color': status_color,
-            'total_injuries': InjuryRecord.objects.filter(player=player).count()
+            'clear_to_play': clear_to_play,
+            'latest_unresolved_injury': latest_unresolved_injury,
+            'total_injuries': total_injuries,
+            'destination_url': destination_url,
         })
     
     # Team injury statistics
@@ -802,6 +797,8 @@ class InjuryCreateView(DoctorRequiredMixin, CreateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        if self.request.method in ('POST', 'PUT'):
+            kwargs['files'] = self.request.FILES
         return kwargs
 
 class InjuryUpdateView(DoctorRequiredMixin, UpdateView):
@@ -816,6 +813,7 @@ class InjuryUpdateView(DoctorRequiredMixin, UpdateView):
         was_self_reported = old.self_reported
         old_status = old.status
         old_clearance = old.medical_clearance
+        old_photo_name = old.photo.name if old.photo else None
 
         # Get medical clearance status from form
         medical_clearance = form.cleaned_data.get('medical_clearance', False)
@@ -843,6 +841,11 @@ class InjuryUpdateView(DoctorRequiredMixin, UpdateView):
 
         response = super().form_valid(form)
 
+        if 'photo' in form.changed_data and old_photo_name:
+            new_photo_name = self.object.photo.name if self.object.photo else None
+            if old_photo_name != new_photo_name:
+                old.photo.storage.delete(old_photo_name)
+
         # ---- Notifications to the player ----
         link = reverse_lazy('tracking:injury_detail', kwargs={'pk': injury.pk}).__str__()
         if was_self_reported:
@@ -865,8 +868,13 @@ class InjuryUpdateView(DoctorRequiredMixin, UpdateView):
         return response
     
     def get_success_url(self):
-        from django.urls import reverse
         return reverse('tracking:injury_detail', kwargs={'pk': self.object.pk})
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.request.method in ('POST', 'PUT'):
+            kwargs['files'] = self.request.FILES
+        return kwargs
 
 # Analytics Views
 @login_required

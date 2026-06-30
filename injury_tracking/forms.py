@@ -26,6 +26,7 @@ class InjuryReportForm(forms.ModelForm):
         fields = [
             'player', 'injury_date',
             'injury_type', 'body_part', 'severity',
+            'injury_context', 'could_keep_playing', 'pain_level', 'injury_nature', 'photo',
             # --- Team 12 addition ---
             'contact_type',
             # ------------------------
@@ -49,6 +50,11 @@ class InjuryReportForm(forms.ModelForm):
             'injury_type': forms.Select(attrs={'class': 'form-control'}),
             'body_part': forms.Select(attrs={'class': 'form-control'}),
             'severity': forms.Select(attrs={'class': 'form-control'}),
+            'injury_context': forms.Select(attrs={'class': 'form-control'}),
+            'could_keep_playing': forms.Select(attrs={'class': 'form-control'}),
+            'pain_level': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'max': 10}),
+            'injury_nature': forms.Select(attrs={'class': 'form-control'}),
+            'photo': forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
             'treatment': forms.Select(attrs={'class': 'form-control'}),
             # Team 12 widgets
             'contact_type': forms.Select(attrs={'class': 'form-control'}),
@@ -72,6 +78,11 @@ class InjuryReportForm(forms.ModelForm):
             "Overuse: repetitive strain over time. "
             "Non-contact and overuse injuries are tracked as potentially preventable."
         )
+        self.fields['injury_context'].help_text = 'Where the injury happened.'
+        self.fields['could_keep_playing'].help_text = 'Whether the player could continue at the time of injury.'
+        self.fields['pain_level'].help_text = 'Pain score from 0 to 10.'
+        self.fields['injury_nature'].help_text = 'Best-fit description of the injury mechanism or presentation.'
+        self.fields['photo'].help_text = 'Upload or replace a photo showing the injury if useful.'
         self.fields['missed_games'].help_text = "Leave blank if unknown at time of reporting — update later."
         self.fields['missed_practices'].help_text = "Leave blank if unknown at time of reporting — update later."
 
@@ -224,6 +235,7 @@ class InjuryUpdateForm(forms.ModelForm):
         model = InjuryRecord
         fields = [
             'status',
+            'injury_context', 'could_keep_playing', 'pain_level', 'injury_nature', 'photo',
             'description', 'symptoms',
             'treatment', 'treatment_notes',
             # --- Team 12 additions ---
@@ -238,6 +250,11 @@ class InjuryUpdateForm(forms.ModelForm):
         ]
         widgets = {
             'status': forms.Select(attrs={'class': 'form-control'}),
+            'injury_context': forms.Select(attrs={'class': 'form-control'}),
+            'could_keep_playing': forms.Select(attrs={'class': 'form-control'}),
+            'pain_level': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'max': 10}),
+            'injury_nature': forms.Select(attrs={'class': 'form-control'}),
+            'photo': forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
             'description': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
             'symptoms': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'treatment': forms.Select(attrs={'class': 'form-control'}),
@@ -264,6 +281,11 @@ class InjuryUpdateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['status'].required = True
         self.fields['status'].help_text = 'Update the current status of the injury.'
+        self.fields['injury_context'].help_text = 'Where the injury happened.'
+        self.fields['could_keep_playing'].help_text = 'Whether the player could continue at the time of injury.'
+        self.fields['pain_level'].help_text = 'Pain score from 0 to 10.'
+        self.fields['injury_nature'].help_text = 'Best-fit description of the injury mechanism or presentation.'
+        self.fields['photo'].help_text = 'Upload a new image to replace the current photo.'
         self.fields['contact_type'].help_text = (
             'Classify as Contact, Non-Contact, or Overuse. '
             'Non-contact and overuse injuries are flagged as potentially preventable in reports.'
