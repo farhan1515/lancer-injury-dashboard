@@ -14,9 +14,9 @@
           <h5 class="mb-0"><i class="bi bi-calendar3 me-2"></i>My Calendar</h5>
           <div class="d-flex align-items-center gap-2 small">
             <span class="legend-dot" style="background:#0b76ef;"></span><span>Team Event</span>
-            <span class="legend-dot ms-2" style="background:#10b981;"></span><span>Appt (Confirmed)</span>
-            <span class="legend-dot ms-2" style="background:#f59e0b;"></span><span>Appt (Pending)</span>
-            <span class="legend-dot ms-2" style="background:#ef4444;"></span><span>Injury</span>
+            <span class="legend-dot ms-2" style="background:#10b981;"></span><span>Confirmed</span>
+            <span class="legend-dot ms-2" style="background:#f59e0b;"></span><span>Pending</span>
+            <span class="legend-dot ms-2" style="background:#ef4444;"></span><span>Cancelled</span>
           </div>
         </div>
         <div class="card-body">
@@ -222,13 +222,6 @@
             <div><strong>Time slot:</strong> ${p.time_slot || '—'}</div>
             <div><strong>Therapist:</strong> ${p.therapist || 'TBD'}</div>
             ${p.note ? '<div><strong>Note:</strong> ' + p.note + '</div>' : ''}
-          `;
-        } else if (p.kind === 'injury') {
-          html = `
-            <div><strong>Date:</strong> ${when}</div>
-            <div><strong>Injury:</strong> ${p.injury_type || '—'}</div>
-            <div><strong>Body part:</strong> ${p.body_part || '—'}</div>
-            <div><strong>Status:</strong> ${p.status || '—'}</div>
           `;
         }
         bodyEl.innerHTML = html;

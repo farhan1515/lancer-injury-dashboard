@@ -8,10 +8,32 @@
   <div class="row justify-content-center">
     <div class="col-md-10 col-lg-8">
 
+      {# ---- Profile Header ---- #}
       <div class="card mb-3">
-        <div class="card-header d-flex align-items-center justify-content-between">
-          <h4 class="mb-0"><i class="bi bi-person-circle me-2"></i>My Profile</h4>
-          <span class="badge bg-info">Player</span>
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-3">
+            {% if user.profile_picture %}
+              <img src="{{ user.profile_picture.url }}"
+                   class="rounded-circle shadow"
+                   style="width:72px;height:72px;object-fit:cover;border:3px solid var(--primary-color);">
+            {% else %}
+              <div class="widget-icon primary" style="width:72px;height:72px;font-size:2rem;margin-bottom:0;">
+                {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+              </div>
+            {% endif %}
+            <div class="flex-grow-1">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h4 class="mb-0">{{ user.get_full_name|default:user.username }}</h4>
+                <span class="badge bg-primary">Player</span>
+              </div>
+              <p class="text-muted mb-0 small mt-1">
+                {{ user.email }}{% if user.team %} · {{ user.team.name }}{% endif %}
+              </p>
+            </div>
+            <a href="{% url 'tracking:player_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-arrow-left me-1"></i>Overview
+            </a>
+          </div>
         </div>
       </div>
 

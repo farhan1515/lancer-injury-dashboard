@@ -4,398 +4,284 @@
 {% block title %}My Dashboard - Lancer Injury Tracking{% endblock %}
 
 {% block content %}
-<div class="container-fluid pb-5 player-dashboard" id="playerDash">
+<div class="container-fluid pb-5">
 
-  {# ============ DESKTOP TWO-COLUMN LAYOUT ============ #}
-  <div class="row gx-3 player-row">
-
-    <div class="col-lg-8">
-
-  {# ============ TAB CONTENT ============ #}
-  <div id="tab-home" class="player-tab" data-tab="home">
-
-    {# Greeting card — top of left column on desktop, hidden on mobile #}
-    <div class="card mb-3 d-none d-md-block">
-      <div class="card-body d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center">
-          <div class="widget-icon primary me-3"><i class="bi bi-person-circle"></i></div>
-          <div>
-            <h1 class="card-title mb-1">Hi, {{ request.user.first_name|default:request.user.username }}</h1>
-            <p class="text-muted mb-0">Your personal injury &amp; wellness hub</p>
+  {# ============ HEADER ============ #}
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+          <div class="d-flex align-items-center gap-3">
+            {% if request.user.profile_picture %}
+              <img src="{{ request.user.profile_picture.url }}"
+                   class="rounded-circle"
+                   style="width:56px;height:56px;object-fit:cover;border:3px solid var(--primary-color);">
+            {% else %}
+              <div class="widget-icon primary" style="margin-bottom:0;">
+                <i class="bi bi-person-circle"></i>
+              </div>
+            {% endif %}
+            <div>
+              <h1 class="card-title mb-1">
+                Hi, {{ request.user.first_name|default:request.user.username }}
+              </h1>
+              <p class="text-muted mb-0">
+                {% if request.user.team %}{{ request.user.team.name }} · {% endif %}Personal Wellness Overview
+              </p>
+            </div>
           </div>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-          <a href="{% url 'player_calendar' %}" class="btn btn-outline-primary">
-            <i class="bi bi-calendar3 me-1"></i>Calendar
-          </a>
-          <div class="dropdown" id="bellWrap">
-            <button type="button" class="btn btn-outline-secondary position-relative"
-                    id="bellDesktop" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-              <i class="bi bi-bell"></i>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {% if not unread_notifications %}d-none{% endif %}"
-                    id="bellBadge">{{ unread_notifications|default:0 }}</span>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{% url 'player_calendar' %}" class="btn btn-outline-primary">
+              <i class="bi bi-calendar3 me-1"></i>Calendar
+            </a>
+            <button type="button" class="btn btn-primary"
+                    data-bs-toggle="modal" data-bs-target="#reportInjuryModal">
+              <i class="bi bi-plus-circle me-1"></i>Report Injury
             </button>
-            <div class="dropdown-menu dropdown-menu-end p-0" style="width: 340px; max-width: 90vw;">
-              <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
-                <span class="fw-semibold small">Notifications</span>
-                <button type="button" class="btn btn-link btn-sm p-0 small" id="markAllRead">Mark all read</button>
-              </div>
-              <div id="notifList" style="max-height: 360px; overflow-y: auto;">
-                <p class="text-muted small text-center py-3 mb-0">Loading…</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-      {# ============ CLEARANCE STATUS WIDGET ============ #}
-    {% if clearance %}
-    <div class="clearance-card mb-3"
-         style="border-left: 6px solid {{ clearance.border_color }};
-                background: {{ clearance.bg_color }};">
-      <div class="d-flex flex-column flex-md-row align-items-md-center text-center text-md-start gap-3">
-        <i class="bi {{ clearance.icon }}" style="font-size: 48px; color: {{ clearance.icon_color }};"></i>
-        <div class="flex-grow-1">
-          <h3 class="mb-1 fw-bold">{{ clearance.title }}</h3>
-          <p class="mb-1">{{ clearance.subtitle }}</p>
-          {% if clearance.clearance_date %}
-            <small class="text-muted">Cleared on {{ clearance.clearance_date|date:"M d, Y" }}</small>
-          {% endif %}
-          {% if clearance.foot_note %}
-            <small class="text-muted d-block">{{ clearance.foot_note }}</small>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-    {% endif %}
-
-    {# ============ SEASON MINI STATS ============ #}
-    <div class="row g-2 mb-3">
-      <div class="col-4">
-        <div class="card mini-stat h-100">
-          <div class="card-body py-2 px-3">
-            <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <div class="mini-stat-label">Games Missed</div>
-                <div class="mini-stat-value"
-                     style="color: {% if total_missed_games > 0 %}#ef4444{% else %}#10b981{% endif %};">
-                  {{ total_missed_games }}
-                </div>
-              </div>
-              <i class="bi bi-controller mini-stat-icon"
-                 style="color: {% if total_missed_games > 0 %}#ef4444{% else %}#10b981{% endif %};"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-4">
-        <div class="card mini-stat h-100">
-          <div class="card-body py-2 px-3">
-            <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <div class="mini-stat-label">Practices Missed</div>
-                <div class="mini-stat-value"
-                     style="color: {% if total_missed_practices > 0 %}#f59e0b{% else %}#10b981{% endif %};">
-                  {{ total_missed_practices }}
-                </div>
-              </div>
-              <i class="bi bi-megaphone mini-stat-icon"
-                 style="color: {% if total_missed_practices > 0 %}#f59e0b{% else %}#10b981{% endif %};"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-4">
-        <div class="card mini-stat h-100">
-          <div class="card-body py-2 px-3">
-            <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <div class="mini-stat-label">Recovery Days</div>
-                <div class="mini-stat-value" style="color: #0b76ef;">
-                  {% if active_recovery_days > 0 %}{{ active_recovery_days }}{% else %}—{% endif %}
-                </div>
-              </div>
-              <i class="bi bi-clock-history mini-stat-icon" style="color: #0b76ef;"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  {# ----- Injury Status Widget ----- #}
-    {% with worst='ok' %}
-      {% if current_injuries %}
-        {% for inj in current_injuries %}
-          {% if inj.status == 'ACTIVE' %}{% with worst='active' %}{% endwith %}{% endif %}
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    {% if not current_injuries %}
-      <div class="card status-card status-ok mb-3">
-        <div class="card-body d-flex align-items-center">
-          <i class="bi bi-shield-check fs-1 text-success me-3"></i>
-          <div>
-            <h4 class="mb-1">All Clear</h4>
-            <p class="text-muted mb-0">No injuries on record. Stay safe out there.</p>
-          </div>
-        </div>
-      </div>
-    {% else %}
-      {# pick worst border color: any active=red, else any recovering=yellow, else green #}
-      {% with border_class='border-recovering' %}
-        {% for inj in current_injuries %}
-          {% if inj.status == 'ACTIVE' %}{% with border_class='border-active' %}{% endwith %}{% endif %}
-        {% endfor %}
-        {% for inj in current_injuries %}
-          <div class="card status-card mb-2
-            {% if inj.status == 'ACTIVE' %}border-active{% elif inj.status == 'RECOVERING' %}border-recovering{% else %}border-recovered{% endif %}">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-start">
-                <div>
-                  <h5 class="mb-1">{{ inj.body_part.name }} — {{ inj.injury_type.name }}</h5>
-                  <p class="text-muted mb-1 small">{{ inj.days_since_injury }} day{{ inj.days_since_injury|pluralize }} since injury</p>
-                  {% if inj.treatment_notes %}
-                    <p class="mb-0 small"><strong>Notes:</strong> {{ inj.treatment_notes|truncatechars:120 }}</p>
-                  {% endif %}
-                </div>
-                <span class="status-pill
-                  {% if inj.status == 'ACTIVE' %}pill-active{% elif inj.status == 'RECOVERING' %}pill-recovering{% else %}pill-recovered{% endif %}">
-                  {{ inj.get_status_display }}
+            <div class="dropdown" id="bellWrap">
+              <button type="button" class="btn btn-outline-secondary position-relative"
+                      id="bellDesktop" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                <i class="bi bi-bell"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger
+                      {% if not unread_notifications %}d-none{% endif %}" id="bellBadge">
+                  {{ unread_notifications|default:0 }}
                 </span>
+              </button>
+              <div class="dropdown-menu dropdown-menu-end p-0" style="width:340px;max-width:90vw;">
+                <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+                  <span class="fw-semibold small">Notifications</span>
+                  <button type="button" class="btn btn-link btn-sm p-0 small" id="markAllRead">
+                    Mark all read
+                  </button>
+                </div>
+                <div id="notifList" style="max-height:360px;overflow-y:auto;">
+                  <p class="text-muted small text-center py-3 mb-0">Loading…</p>
+                </div>
               </div>
             </div>
           </div>
-        {% endfor %}
-      {% endwith %}
-    {% endif %}
-
-    {# ----- Quick Actions ----- #}
-    <div class="row g-2 mb-3">
-      <div class="col-6">
-        <button type="button" class="btn btn-primary w-100 py-3"
-                data-bs-toggle="modal" data-bs-target="#reportInjuryModal">
-          <i class="bi bi-plus-circle me-1"></i>Report Injury
-        </button>
-      </div>
-      <div class="col-6">
-        <button type="button" class="btn btn-outline-primary w-100 py-3"
-                data-bs-toggle="modal" data-bs-target="#requestAppointmentModal">
-          <i class="bi bi-calendar-plus me-1"></i>Request Appointment
-        </button>
-      </div>
-    </div>
-
-    {# ----- Upcoming Appointments (next 2) — mobile-only summary; full list lives in right column on desktop ----- #}
-    <div class="card mb-3 d-lg-none">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h6 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Upcoming Appointments</h6>
-        <a href="#" class="small" onclick="switchTab('appointments');return false;">View all</a>
-      </div>
-      <div class="card-body">
-        {% for a in upcoming_appointments|slice:":2" %}
-          <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
-            <div>
-              <div class="fw-semibold">{{ a.preferred_date|date:"M d, Y" }}</div>
-              <small class="text-muted">{{ a.get_preferred_time_slot_display }}{% if a.therapist %} — {{ a.therapist.get_full_name }}{% endif %}</small>
-            </div>
-            <span class="status-pill
-              {% if a.status == 'CONFIRMED' %}pill-recovered{% elif a.status == 'CANCELLED' %}pill-active{% else %}pill-recovering{% endif %}">
-              {{ a.get_status_display }}
-            </span>
-          </div>
-        {% empty %}
-          <p class="text-muted small mb-0">No upcoming appointments.</p>
-        {% endfor %}
-      </div>
-    </div>
-
-    {# ----- Upcoming Events (next 3) — mobile-only summary; full list lives in right column on desktop ----- #}
-    <div class="card mb-3 d-lg-none">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h6 class="mb-0"><i class="bi bi-calendar3 me-2"></i>Upcoming Events</h6>
-        <a href="#" class="small" onclick="switchTab('events');return false;">View all</a>
-      </div>
-      <div class="card-body">
-        {% for ev in upcoming_events|slice:":3" %}
-          <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
-            <div>
-              <div class="fw-semibold">{{ ev.title }}</div>
-              <small class="text-muted">
-                {{ ev.start_datetime|date:"M d, Y g:i A" }}{% if ev.location %} · {{ ev.location }}{% endif %}
-              </small>
-            </div>
-            <span class="badge bg-secondary">{{ ev.get_event_type_display }}</span>
-          </div>
-        {% empty %}
-          <p class="text-muted small mb-0">No upcoming events.</p>
-        {% endfor %}
+        </div>
       </div>
     </div>
   </div>
 
-  {# ============ INJURIES TAB ============ #}
-  <div id="tab-injuries" class="player-tab" data-tab="injuries" style="display:none;">
-    <h6 class="text-muted fw-semibold mb-3"><i class="bi bi-clock-history me-1"></i>Injury Timeline</h6>
-    {% if all_injuries %}
-      <div class="injury-timeline">
-        {% for inj in all_injuries %}
-          <div class="timeline-item
-            {% if inj.status == 'ACTIVE' %}border-active{% elif inj.status == 'RECOVERING' %}border-recovering{% else %}border-recovered{% endif %}">
-            <div class="card">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
+  {# ============ STAT WIDGETS ============ #}
+  <div class="row mb-4">
+
+    {# Clearance — spans 2 columns #}
+    <div class="col-lg-6 col-md-12 mb-3">
+      {% if clearance %}
+      <div class="widget h-100"
+           style="border-left:5px solid {{ clearance.border_color }};
+                  background:{{ clearance.bg_color }};">
+        <div class="d-flex align-items-center gap-3">
+          <div class="widget-icon"
+               style="background:{{ clearance.border_color }};min-width:3rem;margin-bottom:0;">
+            <i class="bi {{ clearance.icon }}"></i>
+          </div>
+          <div>
+            <h3 class="mb-1 fw-bold" style="color:{{ clearance.icon_color }};">
+              {{ clearance.title }}
+            </h3>
+            <p class="text-muted mb-1 small">{{ clearance.subtitle }}</p>
+            {% if clearance.clearance_date %}
+              <small class="text-muted">Cleared {{ clearance.clearance_date|date:"M d, Y" }}</small>
+            {% endif %}
+            {% if clearance.foot_note %}
+              <small class="text-muted d-block">{{ clearance.foot_note }}</small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="col-lg-2 col-md-4 mb-3">
+      <div class="widget h-100">
+        <div class="d-flex align-items-center">
+          <div class="widget-icon warning me-3">
+            <i class="bi bi-controller"></i>
+          </div>
+          <div>
+            <h3 class="mb-1"
+                style="color:{% if total_missed_games > 0 %}#ef4444{% else %}#10b981{% endif %};">
+              {{ total_missed_games }}
+            </h3>
+            <p class="text-muted mb-0 small">Games Missed</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-2 col-md-4 mb-3">
+      <div class="widget h-100">
+        <div class="d-flex align-items-center">
+          <div class="widget-icon warning me-3">
+            <i class="bi bi-megaphone"></i>
+          </div>
+          <div>
+            <h3 class="mb-1"
+                style="color:{% if total_missed_practices > 0 %}#f59e0b{% else %}#10b981{% endif %};">
+              {{ total_missed_practices }}
+            </h3>
+            <p class="text-muted mb-0 small">Practices Missed</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-2 col-md-4 mb-3">
+      <div class="widget h-100">
+        <div class="d-flex align-items-center">
+          <div class="widget-icon primary me-3">
+            <i class="bi bi-clock-history"></i>
+          </div>
+          <div>
+            <h3 class="mb-1" style="color:#0b76ef;">
+              {% if active_recovery_days > 0 %}{{ active_recovery_days }}{% else %}—{% endif %}
+            </h3>
+            <p class="text-muted mb-0 small">Recovery Days</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  {# ============ CONTENT COLUMNS ============ #}
+  <div class="row">
+
+    {# Left — Current Injuries #}
+    <div class="col-lg-7 mb-4">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h5 class="mb-0"><i class="bi bi-bandaid me-2"></i>Current Injuries</h5>
+          <a href="{% url 'injury_list' %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-list-ul me-1"></i>Full History
+          </a>
+        </div>
+        <div class="card-body">
+          {% if current_injuries %}
+            {% for inj in current_injuries|slice:":4" %}
+            <div class="d-flex align-items-start gap-3 py-3
+                        {% if not forloop.last %}border-bottom{% endif %}">
+              <div class="widget-icon
+                {% if inj.status == 'ACTIVE' %}danger{% elif inj.status == 'RECOVERING' %}warning{% else %}success{% endif %}"
+                   style="width:2.5rem;height:2.5rem;min-width:2.5rem;font-size:1.1rem;margin-bottom:0;">
+                <i class="bi bi-{% if inj.status == 'ACTIVE' %}x-circle{% elif inj.status == 'RECOVERING' %}arrow-clockwise{% else %}check-circle{% endif %}"></i>
+              </div>
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-start">
                   <div>
-                    <div class="text-muted small">{{ inj.injury_date|date:"M d, Y" }}</div>
-                    <h6 class="mb-1 fw-bold">{{ inj.injury_type.name }} — {{ inj.body_part.name }}</h6>
+                    <div class="fw-semibold">{{ inj.body_part.name }} — {{ inj.injury_type.name }}</div>
+                    <small class="text-muted">
+                      {{ inj.injury_date|date:"M d, Y" }}
+                      · {{ inj.days_since_injury }} day{{ inj.days_since_injury|pluralize }} ago
+                    </small>
+                    {% if inj.estimated_recovery_time %}
+                      <small class="text-muted d-block">
+                        Est. recovery: {{ inj.estimated_recovery_time }} days
+                      </small>
+                    {% endif %}
                   </div>
-                  <div class="text-end">
-                    <span class="status-pill
-                      {% if inj.status == 'ACTIVE' %}pill-active{% elif inj.status == 'RECOVERING' %}pill-recovering{% else %}pill-recovered{% endif %}">
+                  <div class="text-end ms-2">
+                    <span class="status-badge status-{{ inj.status|lower }}">
                       {{ inj.get_status_display }}
                     </span>
+                    {% if inj.severity %}
                     <br>
-                    <span class="badge mt-1" style="background-color: {{ inj.severity.color_code }}; color:#fff;">
+                    <span class="badge mt-1"
+                          style="background-color:{{ inj.severity.color_code }};color:#fff;">
                       {{ inj.severity.name }}
                     </span>
+                    {% endif %}
                   </div>
                 </div>
-                <div class="small">
-                  {% if inj.reported_by %}
-                    <div><i class="bi bi-person me-1"></i>Reported by {{ inj.reported_by.get_full_name|default:inj.reported_by.username }}</div>
-                  {% endif %}
-                  {% if inj.treatment %}<div><i class="bi bi-bandaid me-1"></i>Treatment: {{ inj.get_treatment_display }}</div>{% endif %}
-                  {% if inj.estimated_recovery_time %}<div><i class="bi bi-clock me-1"></i>Est. recovery: {{ inj.estimated_recovery_time }} days</div>{% endif %}
-                  {% if inj.actual_recovery_time %}<div><i class="bi bi-check-circle me-1"></i>Actual recovery: {{ inj.actual_recovery_time }} days</div>{% endif %}
-                  {% if inj.clearance_date %}<div><i class="bi bi-shield-check me-1"></i>Cleared: {{ inj.clearance_date|date:"M d, Y" }}</div>{% endif %}
-                </div>
-                {% if inj.description or inj.treatment_notes %}
-                  <button class="btn btn-sm btn-link p-0 mt-2" data-bs-toggle="collapse" data-bs-target="#inj-{{ inj.id }}">
-                    Details <i class="bi bi-chevron-down ms-1"></i>
-                  </button>
-                  <div class="collapse mt-2" id="inj-{{ inj.id }}">
-                    {% if inj.description %}<p class="small mb-1"><strong>Description:</strong> {{ inj.description }}</p>{% endif %}
-                    {% if inj.treatment_notes %}<p class="small mb-0"><strong>Treatment notes:</strong> {{ inj.treatment_notes }}</p>{% endif %}
-                  </div>
-                {% endif %}
               </div>
             </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="text-center py-5 text-muted">
-        <i class="bi bi-clipboard-check fs-1 d-block mb-2"></i>
-        No injuries on record.
-      </div>
-    {% endif %}
-  </div>
-
-    </div> {# /col-lg-8 #}
-
-    <div class="col-lg-4 player-right-col">
-
-  {# ============ APPOINTMENTS TAB ============ #}
-  <div id="tab-appointments" class="player-tab" data-tab="appointments" style="display:none;">
-    {% if upcoming_appointments %}
-      {% for a in upcoming_appointments %}
-        <div class="card mb-2">
-          <div class="card-body d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="mb-1">{{ a.preferred_date|date:"l, M d, Y" }}</h6>
-              <small class="text-muted">
-                {{ a.get_preferred_time_slot_display }}{% if a.therapist %} — {{ a.therapist.get_full_name }}{% endif %}
-              </small>
-              {% if a.note %}<div class="small text-muted mt-1">Note: {{ a.note|truncatechars:80 }}</div>{% endif %}
+            {% endfor %}
+          {% else %}
+            <div class="text-center py-5 text-muted">
+              <i class="bi bi-shield-check fs-1 d-block mb-2 text-success"></i>
+              <p class="mb-1 fw-semibold">No active injuries</p>
+              <p class="small mb-0">Stay safe out there!</p>
             </div>
-            <span class="status-pill
-              {% if a.status == 'CONFIRMED' %}pill-recovered{% elif a.status == 'CANCELLED' %}pill-active{% else %}pill-recovering{% endif %}">
-              {{ a.get_status_display }}
-            </span>
-          </div>
+          {% endif %}
         </div>
-      {% endfor %}
-    {% else %}
-      <div class="text-center py-5 text-muted">
-        <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
-        No upcoming appointments.
+        <div class="card-footer bg-transparent">
+          <button type="button" class="btn btn-primary w-100"
+                  data-bs-toggle="modal" data-bs-target="#reportInjuryModal">
+            <i class="bi bi-plus-circle me-1"></i>Report New Injury
+          </button>
+        </div>
       </div>
-    {% endif %}
-    <button type="button" class="btn btn-primary w-100 py-3 mt-3"
-            data-bs-toggle="modal" data-bs-target="#requestAppointmentModal">
-      <i class="bi bi-plus-circle me-1"></i>Request New Appointment
-    </button>
-  </div>
-
-  {# ============ EVENTS TAB ============ #}
-  <div id="tab-events" class="player-tab" data-tab="events" style="display:none;">
-    <div class="btn-group mb-3 w-100" role="group" id="eventFilter">
-      <input type="radio" class="btn-check" name="ef" id="ef-all" autocomplete="off" checked>
-      <label class="btn btn-outline-primary" for="ef-all">All</label>
-      <input type="radio" class="btn-check" name="ef" id="ef-train" autocomplete="off">
-      <label class="btn btn-outline-primary" for="ef-train">Training</label>
-      <input type="radio" class="btn-check" name="ef" id="ef-game" autocomplete="off">
-      <label class="btn btn-outline-primary" for="ef-game">Games</label>
     </div>
-    {% if upcoming_events %}
-      <div id="eventList">
-        {% for ev in upcoming_events %}
-          <div class="card mb-2 event-card" data-type="{{ ev.event_type }}">
-            <div class="card-body d-flex justify-content-between align-items-start">
-              <div>
-                <h6 class="mb-1 fw-bold">{{ ev.title }}</h6>
-                <small class="text-muted d-block">
-                  <i class="bi bi-calendar3 me-1"></i>{{ ev.start_datetime|date:"l, M d g:i A" }}
-                </small>
-                {% if ev.location %}
-                  <small class="text-muted d-block"><i class="bi bi-geo-alt me-1"></i>{{ ev.location }}</small>
-                {% endif %}
+
+    {# Right — Upcoming Appointments #}
+    <div class="col-lg-5 mb-4">
+      <div class="card h-100">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h5 class="mb-0">
+            <i class="bi bi-calendar-check me-2"></i>Upcoming Appointments
+          </h5>
+          <a href="{% url 'player_calendar' %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-calendar3 me-1"></i>Calendar
+          </a>
+        </div>
+        <div class="card-body">
+          {% if upcoming_appointments %}
+            {% for a in upcoming_appointments %}
+            <div class="d-flex align-items-start gap-3 py-3
+                        {% if not forloop.last %}border-bottom{% endif %}">
+              <div class="widget-icon
+                {% if a.status == 'CONFIRMED' %}success{% elif a.status == 'CANCELLED' %}danger{% else %}warning{% endif %}"
+                   style="width:2.5rem;height:2.5rem;min-width:2.5rem;font-size:1.1rem;margin-bottom:0;">
+                <i class="bi bi-calendar-check"></i>
               </div>
-              <span class="badge
-                {% if ev.event_type == 'GAME' %}bg-warning text-dark
-                {% elif ev.event_type == 'TRAINING' %}bg-primary
-                {% else %}bg-secondary{% endif %}">
-                {{ ev.get_event_type_display }}
-              </span>
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <div class="fw-semibold">{{ a.preferred_date|date:"l, M d, Y" }}</div>
+                    <small class="text-muted">
+                      {{ a.get_preferred_time_slot_display }}
+                      {% if a.therapist %} · {{ a.therapist.get_full_name }}{% endif %}
+                    </small>
+                    {% if a.note %}
+                      <small class="text-muted d-block">{{ a.note|truncatechars:60 }}</small>
+                    {% endif %}
+                  </div>
+                  <span class="status-badge
+                    {% if a.status == 'CONFIRMED' %}status-recovering{% elif a.status == 'CANCELLED' %}status-active{% else %}status-chronic{% endif %}
+                    ms-2">
+                    {{ a.get_status_display }}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="text-center py-5 text-muted">
-        <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
-        No upcoming events scheduled.
-      </div>
-    {% endif %}
-  </div>
-
-  {# ============ PROFILE TAB ============ #}
-  <div id="tab-profile" class="player-tab" data-tab="profile" style="display:none;">
-    <div class="card">
-      <div class="card-body text-center">
-        {% if request.user.profile_picture %}
-          <img src="{{ request.user.profile_picture.url }}" class="rounded-circle mb-3" style="width:96px;height:96px;object-fit:cover;">
-        {% else %}
-          <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center mb-3"
-               style="width:96px;height:96px;font-size:2rem;">
-            {{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}
-          </div>
-        {% endif %}
-        <h5 class="mb-1">{{ request.user.get_full_name|default:request.user.username }}</h5>
-        <p class="text-muted small mb-3">{{ request.user.email }}{% if request.user.team %} · {{ request.user.team.name }}{% endif %}</p>
-        <a href="{% url 'profile' %}" class="btn btn-outline-primary">
-          <i class="bi bi-pencil me-1"></i>Edit Profile
-        </a>
+            {% endfor %}
+          {% else %}
+            <div class="text-center py-5 text-muted">
+              <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+              <p class="small mb-0">No upcoming appointments.</p>
+            </div>
+          {% endif %}
+        </div>
+        <div class="card-footer bg-transparent">
+          <button type="button" class="btn btn-outline-primary w-100"
+                  data-bs-toggle="modal" data-bs-target="#requestAppointmentModal">
+            <i class="bi bi-calendar-plus me-1"></i>Request Appointment
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-    </div> {# /col-lg-4 #}
-  </div> {# /row #}
+  </div>
 
 </div>
 
+
 {# ============ REPORT INJURY MODAL ============ #}
+
 <div class="modal fade" id="reportInjuryModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-md-down">
     <div class="modal-content">
@@ -741,83 +627,32 @@
 
 {# ============ MOBILE BOTTOM NAV ============ #}
 <nav class="mobile-bottom-nav d-md-none" aria-label="Player navigation">
-  <button type="button" class="mbn-btn active" data-target="home">
+  <a href="{% url 'tracking:player_dashboard' %}" class="mbn-btn active text-decoration-none">
     <i class="bi bi-house-door"></i><span>Home</span>
     {% if unread_notifications %}<span class="mbn-badge">{{ unread_notifications }}</span>{% endif %}
-  </button>
-  <button type="button" class="mbn-btn" data-target="injuries">
+  </a>
+  <a href="{% url 'injury_list' %}" class="mbn-btn text-decoration-none">
     <i class="bi bi-bandaid"></i><span>Injuries</span>
-  </button>
+  </a>
   <a href="{% url 'player_calendar' %}" class="mbn-btn text-decoration-none">
     <i class="bi bi-calendar3"></i><span>Calendar</span>
   </a>
-  <button type="button" class="mbn-btn" data-target="events">
-    <i class="bi bi-calendar-event"></i><span>Events</span>
-  </button>
-  <button type="button" class="mbn-btn" data-target="profile">
+  <a href="{% url 'profile' %}" class="mbn-btn text-decoration-none">
     <i class="bi bi-person"></i><span>Profile</span>
-  </button>
+  </a>
 </nav>
 
 <style>
-  /* ---- General ---- */
-  .player-dashboard { font-size: 15px; }
   @media (max-width: 768px) {
-    .player-dashboard { font-size: 14px; padding-bottom: 80px !important; }
-    /* Hide top base navbar on mobile for player dashboard */
+    .container-fluid { padding-bottom: 80px; }
     nav.navbar { display: none !important; }
     main.container-fluid { padding-top: 1rem !important; }
-  }
-
-  /* ---- Clearance status widget ---- */
-  .clearance-card {
-    border-radius: 16px;
-    min-height: 120px;
-    padding: 20px 24px;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
-  }
-  .clearance-card h3 { font-size: 1.4rem; }
-
-  /* ---- Mini stat cards ---- */
-  .mini-stat { border-radius: 12px; }
-  .mini-stat-label  { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
-  .mini-stat-value  { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
-  .mini-stat-icon   { font-size: 1.5rem; opacity: 0.85; }
-  @media (max-width: 576px) {
-    .mini-stat-value { font-size: 1.2rem; }
-    .mini-stat-icon  { font-size: 1.2rem; }
   }
 
   /* ---- Notification dropdown ---- */
   .notif-row { color: inherit; }
   .notif-row:hover { background: #f1f5f9; }
   .notif-row.unread { background: #eff6ff; }
-
-  /* ---- Status cards / pills ---- */
-  .status-card { border-left: 4px solid #cbd5e1; border-radius: 12px; }
-  .status-card.border-active     { border-left-color: #ef4444; }
-  .status-card.border-recovering { border-left-color: #f59e0b; }
-  .status-card.border-recovered  { border-left-color: #10b981; }
-  .status-card.status-ok         { border-left-color: #10b981; background: #ecfdf5; }
-  .status-pill {
-    display: inline-block; padding: 3px 10px; border-radius: 999px;
-    font-size: 11px; font-weight: 600; white-space: nowrap;
-  }
-  .pill-active     { background:#fee2e2; color:#991b1b; }
-  .pill-recovering { background:#fef3c7; color:#92400e; }
-  .pill-recovered  { background:#d1fae5; color:#065f46; }
-
-  /* ---- Timeline ---- */
-  .injury-timeline { position: relative; padding-left: 0; }
-  .timeline-item { position: relative; padding-left: 18px; margin-bottom: 14px; }
-  .timeline-item::before {
-    content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px;
-    background:#cbd5e1;
-  }
-  .timeline-item.border-active::before     { background:#ef4444; }
-  .timeline-item.border-recovering::before { background:#f59e0b; }
-  .timeline-item.border-recovered::before  { background:#10b981; }
-  .timeline-item .card { border-radius:12px; }
 
   /* ---- Bottom mobile nav ---- */
   .mobile-bottom-nav {
@@ -840,39 +675,10 @@
     background: #ef4444; color: #fff;
     border-radius: 999px; font-size: 9px; padding: 1px 5px; line-height: 1.2;
   }
-
-  /* ---- Desktop: two-column Bootstrap layout with sticky right column ---- */
-  @media (min-width: 769px) {
-    .player-tab { display: block !important; }
-    .player-right-col {
-      position: sticky;
-      top: 20px;
-      align-self: flex-start;
-    }
-    .player-right-col .player-tab { margin-bottom: 1rem; }
-  }
 </style>
 
 <script>
   (function() {
-    function switchTab(target) {
-      document.querySelectorAll('.player-tab').forEach(el => {
-        el.style.display = (el.dataset.tab === target) ? 'block' : 'none';
-      });
-      document.querySelectorAll('.mbn-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.target === target);
-      });
-      // Only meaningful on mobile; desktop CSS forces display:block on all.
-      window.scrollTo(0, 0);
-    }
-    window.switchTab = switchTab;
-
-    // Respect ?tab=<id> in the URL (used by calendar bottom-nav, etc.)
-    const initialTab = new URLSearchParams(window.location.search).get('tab');
-    if (initialTab && ['home','injuries','appointments','events','profile'].includes(initialTab)) {
-      switchTab(initialTab);
-    }
-
     // ---- Notification bell ----
     const bellWrap = document.getElementById('bellWrap');
     if (bellWrap) {
@@ -941,23 +747,6 @@
     document.querySelectorAll('.mbn-btn').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.target));
     });
-
-    // Event filter (All / Training / Games)
-    const setEvents = (filter) => {
-      document.querySelectorAll('.event-card').forEach(c => {
-        const t = c.dataset.type;
-        const match = (filter === 'all') ||
-                      (filter === 'training' && t === 'TRAINING') ||
-                      (filter === 'game' && t === 'GAME');
-        c.style.display = match ? '' : 'none';
-      });
-    };
-    const efAll = document.getElementById('ef-all');
-    const efTrain = document.getElementById('ef-train');
-    const efGame = document.getElementById('ef-game');
-    if (efAll) efAll.addEventListener('change', () => setEvents('all'));
-    if (efTrain) efTrain.addEventListener('change', () => setEvents('training'));
-    if (efGame) efGame.addEventListener('change', () => setEvents('game'));
   })();
 </script>
 {% endblock %}

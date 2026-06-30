@@ -474,6 +474,17 @@
                       <i class="bi bi-person-check me-1"></i>Request Access
                     </a>
                   </li>
+                {% elif user.role == 'PLAYER' %}
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'injury_list' %}">
+                      <i class="bi bi-bandaid me-1"></i>My Injuries
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="{% url 'player_calendar' %}">
+                      <i class="bi bi-calendar3 me-1"></i>Calendar
+                    </a>
+                  </li>
                 {% endif %}
                 {% if user.role != 'PLAYER' %}
                 <li class="nav-item">

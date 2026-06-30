@@ -414,7 +414,7 @@ def player_calendar(request):
 
     from datetime import timedelta
     import json
-    from injury_tracking.models import Event, Appointment, InjuryRecord
+    from injury_tracking.models import Event, Appointment
 
     today = timezone.now().date()
     cutoff = today - timedelta(days=60)
@@ -430,11 +430,6 @@ def player_calendar(request):
         player=request.user,
         preferred_date__gte=cutoff,
     ).select_related('therapist').order_by('preferred_date'))
-
-    player_injuries = list(InjuryRecord.objects.filter(
-        player=request.user,
-        injury_date__gte=cutoff,
-    ).select_related('injury_type', 'body_part').order_by('-injury_date'))
 
     events_data = []
     for ev in team_events:
@@ -464,19 +459,6 @@ def player_calendar(request):
                 'therapist': (a.therapist.get_full_name() if a.therapist else 'TBD'),
                 'time_slot': a.get_preferred_time_slot_display(),
                 'note': a.note or '',
-            },
-        })
-    for inj in player_injuries:
-        events_data.append({
-            'title': f"{inj.injury_type.name} — {inj.body_part.name}",
-            'start': inj.injury_date.isoformat(),
-            'allDay': True,
-            'color': '#ef4444',
-            'extendedProps': {
-                'kind': 'injury',
-                'injury_type': inj.injury_type.name,
-                'body_part': inj.body_part.name,
-                'status': inj.get_status_display(),
             },
         })
 

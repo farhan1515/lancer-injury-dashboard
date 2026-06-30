@@ -386,57 +386,42 @@ def doctor_dashboard(request):
 
 @login_required
 def player_dashboard(request):
-    """Player dashboard for personal injury history"""
-    # Check if user has completed registration
+    """Player overview dashboard."""
     if not request.user.is_registration_complete:
         return redirect('complete_registration')
-    
+
     if request.user.role not in ['ADMIN', 'PLAYER']:
         messages.error(request, "Access denied. Player privileges required.")
         return redirect('dashboard')
-    
+
     user = request.user
     today = timezone.now().date()
 
-    # Player's injury history (used by Injuries tab and Home injury status widget)
-    all_injuries = InjuryRecord.objects.filter(player=user).select_related(
-        'injury_type', 'body_part', 'severity', 'reported_by'
+    # Current (non-recovered) injuries — shown on the overview cards
+    current_injuries = InjuryRecord.objects.filter(
+        player=user
+    ).exclude(status='RECOVERED').select_related(
+        'injury_type', 'body_part', 'severity'
     ).order_by('-injury_date')
-    current_injuries = all_injuries.exclude(status='RECOVERED')
-    past_injuries = all_injuries.filter(status='RECOVERED')
 
-    # Legacy aliases kept so the existing template stays functional until rewrite
-    active_injuries = all_injuries.filter(status='ACTIVE')
-    total_injuries = all_injuries.count()
-    avg_recovery_time = past_injuries.aggregate(avg_time=Avg('actual_recovery_time'))['avg_time']
-
-    # Upcoming appointments for Home + Appointments tab
+    # Upcoming appointments (next 5)
     upcoming_appointments = Appointment.objects.filter(
         player=user,
         preferred_date__gte=today,
-    ).exclude(status='CANCELLED').select_related('therapist', 'team').order_by('preferred_date')
-
-    # Upcoming team events for Home + Events tab
-    upcoming_events = []
-    if getattr(user, 'team', None):
-        upcoming_events = Event.objects.filter(
-            team=user.team,
-            end_datetime__gte=timezone.now(),
-        ).order_by('start_datetime')[:10]
+    ).exclude(status='CANCELLED').select_related('therapist', 'team').order_by('preferred_date')[:5]
 
     # Notifications
     unread_notifications = Notification.objects.filter(user=user, is_read=False).count()
 
-    # Body parts for the manual selector in the report-injury wizard
+    # Body parts for the injury-report wizard modal
     body_parts = BodyPart.objects.all().order_by('name')
 
-    # ---------- Clearance status widget ----------
-    total_count = all_injuries.count()
-    active_count_player = active_injuries.count()
-    recovering_count_player = all_injuries.filter(status='RECOVERING').count()
-    recovered_count_player = past_injuries.count()
+    # ---------- Clearance status ----------
+    active_count_player = current_injuries.filter(status='ACTIVE').count()
+    recovering_count_player = current_injuries.filter(status='RECOVERING').count()
+    has_any_injury = InjuryRecord.objects.filter(player=user).exists()
 
-    if total_count == 0:
+    if not has_any_injury:
         clearance = {
             'state': 'ok',
             'title': 'All Clear',
@@ -452,8 +437,10 @@ def player_dashboard(request):
         clearance = {
             'state': 'active',
             'title': 'Not Cleared to Play',
-            'subtitle': f"You have {active_count_player} active "
-                        f"{'injury' if active_count_player == 1 else 'injuries'} requiring attention",
+            'subtitle': (
+                f"You have {active_count_player} active "
+                f"{'injury' if active_count_player == 1 else 'injuries'} requiring attention"
+            ),
             'icon': 'bi-x-circle-fill',
             'border_color': '#ef4444',
             'icon_color': '#ef4444',
@@ -465,8 +452,10 @@ def player_dashboard(request):
         clearance = {
             'state': 'recovering',
             'title': 'Recovery in Progress',
-            'subtitle': f"You have {recovering_count_player} "
-                        f"{'injury' if recovering_count_player == 1 else 'injuries'} being monitored",
+            'subtitle': (
+                f"You have {recovering_count_player} "
+                f"{'injury' if recovering_count_player == 1 else 'injuries'} being monitored"
+            ),
             'icon': 'bi-exclamation-triangle-fill',
             'border_color': '#f59e0b',
             'icon_color': '#f59e0b',
@@ -475,9 +464,8 @@ def player_dashboard(request):
             'foot_note': 'Contact your therapist if symptoms worsen.',
         }
     else:
-        # All injuries are RECOVERED
-        last_cleared = past_injuries.filter(
-            medical_clearance=True, clearance_date__isnull=False
+        last_cleared = InjuryRecord.objects.filter(
+            player=user, medical_clearance=True, clearance_date__isnull=False
         ).order_by('-clearance_date').first()
         clearance = {
             'state': 'ok',
@@ -491,32 +479,22 @@ def player_dashboard(request):
             'foot_note': '',
         }
 
-    # ---------- Season stats (missed games / practices / recovery days) ----------
+    # ---------- Season stats ----------
     current_year = today.year
-    season_injuries = InjuryRecord.objects.filter(
-        player=user, injury_date__year=current_year
+    season_qs = InjuryRecord.objects.filter(player=user, injury_date__year=current_year)
+    total_missed_games = season_qs.aggregate(s=Sum('missed_games'))['s'] or 0
+    total_missed_practices = season_qs.aggregate(s=Sum('missed_practices'))['s'] or 0
+    active_recovery_days = (
+        InjuryRecord.objects.filter(player=user)
+        .exclude(status='RECOVERED')
+        .aggregate(s=Sum('estimated_recovery_time'))['s'] or 0
     )
-    total_missed_games = season_injuries.aggregate(s=Sum('missed_games'))['s'] or 0
-    total_missed_practices = season_injuries.aggregate(s=Sum('missed_practices'))['s'] or 0
-    active_recovery_days = InjuryRecord.objects.filter(player=user).exclude(
-        status='RECOVERED'
-    ).aggregate(s=Sum('estimated_recovery_time'))['s'] or 0
 
     context = {
-        # Injury data
-        'all_injuries': all_injuries,
         'current_injuries': current_injuries,
-        'past_injuries': past_injuries,
-        'active_injuries': active_injuries,     # legacy alias
-        'injuries': all_injuries,               # legacy alias
-        'total_injuries': total_injuries,
-        'avg_recovery_time': avg_recovery_time,
-        # New tabs
         'upcoming_appointments': upcoming_appointments,
-        'upcoming_events': upcoming_events,
         'unread_notifications': unread_notifications,
         'body_parts': body_parts,
-        # Clearance + season stats
         'clearance': clearance,
         'total_missed_games': total_missed_games,
         'total_missed_practices': total_missed_practices,
