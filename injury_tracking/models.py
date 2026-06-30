@@ -96,6 +96,27 @@ class InjuryRecord(models.Model):
         ('UNKNOWN', 'Unknown'),
     ]
 
+    INJURY_CONTEXT_CHOICES = [
+        ('PRACTICE', 'Practice'),
+        ('GAME', 'Game'),
+        ('OTHER', 'Other'),
+    ]
+
+    COULD_KEEP_PLAYING_CHOICES = [
+        ('YES', 'Yes'),
+        ('NO', 'No'),
+        ('STOPPED_LATER', 'Stopped later'),
+    ]
+
+    INJURY_NATURE_CHOICES = [
+        ('bruise', 'Bruise'),
+        ('twist', 'Twist'),
+        ('pull', 'Pull'),
+        ('impact', 'Impact'),
+        ('cut', 'Cut'),
+        ('other', 'Other'),
+    ]
+
     contact_type = models.CharField(
         max_length=20,
         choices=CONTACT_TYPE_CHOICES,
@@ -143,6 +164,30 @@ class InjuryRecord(models.Model):
     injury_type = models.ForeignKey(InjuryType, on_delete=models.CASCADE)
     body_part = models.ForeignKey(BodyPart, on_delete=models.CASCADE)
     severity = models.ForeignKey(InjurySeverity, on_delete=models.CASCADE)
+    injury_context = models.CharField(
+        max_length=20,
+        choices=INJURY_CONTEXT_CHOICES,
+        null=True,
+        blank=True,
+    )
+    could_keep_playing = models.CharField(
+        max_length=20,
+        choices=COULD_KEEP_PLAYING_CHOICES,
+        null=True,
+        blank=True,
+    )
+    pain_level = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(10)],
+    )
+    injury_nature = models.CharField(
+        max_length=20,
+        choices=INJURY_NATURE_CHOICES,
+        null=True,
+        blank=True,
+    )
+    photo = models.ImageField(upload_to='injury_photos/', null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
 
     # Description and Notes

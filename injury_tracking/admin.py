@@ -28,12 +28,14 @@ class InjurySeverityAdmin(admin.ModelAdmin):
 @admin.register(InjuryRecord)
 class InjuryRecordAdmin(admin.ModelAdmin):
     list_display = [
-        'player', 'injury_type', 'body_part', 'severity', 
-        'status', 'injury_date', 'reported_date', 'medical_clearance'
+        'player', 'injury_type', 'body_part', 'injury_context',
+        'injury_nature', 'pain_level', 'severity', 'status',
+        'injury_date', 'reported_date', 'medical_clearance'
     ]
     list_filter = [
         'status', 'severity', 'injury_type', 'body_part', 
-        'requires_surgery', 'medical_clearance', 'is_confidential',
+        'injury_context', 'could_keep_playing', 'injury_nature',
+        'requires_surgery', 'medical_clearance', 'is_confidential', 'self_reported',
         'injury_date', 'reported_date'
     ]
     search_fields = [
@@ -49,7 +51,11 @@ class InjuryRecordAdmin(admin.ModelAdmin):
             'fields': ('player', 'reported_by', 'injury_date', 'reported_date')
         }),
         ('Injury Details', {
-            'fields': ('injury_type', 'body_part', 'severity', 'status', 'description', 'symptoms')
+            'fields': (
+                'injury_type', 'body_part', 'severity', 'status',
+                'injury_context', 'could_keep_playing', 'pain_level',
+                'injury_nature', 'photo', 'description', 'symptoms'
+            )
         }),
         ('Treatment', {
             'fields': ('treatment', 'treatment_notes', 'requires_surgery', 'surgery_date')
@@ -64,7 +70,7 @@ class InjuryRecordAdmin(admin.ModelAdmin):
             'fields': ('follow_up_required', 'follow_up_date', 'follow_up_notes')
         }),
         ('Metadata', {
-            'fields': ('is_confidential', 'created_at', 'updated_at'),
+            'fields': ('is_confidential', 'self_reported', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )

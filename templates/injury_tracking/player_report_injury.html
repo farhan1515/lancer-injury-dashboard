@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+
+{% block title %}Report an Injury - Lancer Injury Tracking{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card overflow-hidden">
+        <div class="card-body p-4 p-lg-5">
+          <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+            <div>
+              <p class="text-uppercase text-primary fw-semibold small mb-2">Player Self-Report</p>
+              <h1 class="card-title mb-2">Report an injury</h1>
+              <p class="text-muted mb-0">Complete the quick 2-step check-in so your therapist can review it and follow up.</p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+              <a href="{% url 'tracking:player_dashboard' %}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left me-1"></i>Back to Overview
+              </a>
+              <a href="{% url 'injury_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-clock-history me-1"></i>My Injury History
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-xl-8">
+      {% if form.non_field_errors or form.errors %}
+      <div class="alert alert-danger">
+        <div class="fw-semibold mb-1">Please fix the highlighted fields.</div>
+        {{ form.non_field_errors }}
+      </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'tracking:player_report_injury_submit' %}" enctype="multipart/form-data" id="playerReportWizard" novalidate>
+        {% csrf_token %}
+
+        <div class="card mb-4">
+          <div class="card-body p-4">
+            <div class="wizard-progress mb-4">
+              <div class="wizard-progress__step" data-step-indicator="1">
+                <span class="wizard-progress__number">1</span>
+                <div>
+                  <div class="fw-semibold">Injury basics</div>
+                  <div class="small text-muted">Body part, date, and summary</div>
+                </div>
+              </div>
+              <div class="wizard-progress__divider"></div>
+              <div class="wizard-progress__step" data-step-indicator="2">
+                <span class="wizard-progress__number">2</span>
+                <div>
+                  <div class="fw-semibold">Extra detail</div>
+                  <div class="small text-muted">Context, pain, and photo</div>
+                </div>
+              </div>
+            </div>
+
+            <input type="hidden" id="wizardCurrentStep" value="{{ current_step|default:1 }}">
+
+            <section class="wizard-step" data-step="1">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="{{ form.body_part.id_for_label }}" class="form-label">Body part</label>
+                  {{ form.body_part }}
+                  {% if form.body_part.errors %}<div class="text-danger small mt-1">{{ form.body_part.errors|join:', ' }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                  <label for="{{ form.injury_date.id_for_label }}" class="form-label">Injury date</label>
+                  {{ form.injury_date }}
+                  {% if form.injury_date.errors %}<div class="text-danger small mt-1">{{ form.injury_date.errors|join:', ' }}</div>{% endif %}
+                </div>
+                <div class="col-12">
+                  <label for="{{ form.description.id_for_label }}" class="form-label">What happened?</label>
+                  {{ form.description }}
+                  {% if form.description.help_text %}<div class="form-text">{{ form.description.help_text }}</div>{% endif %}
+                  {% if form.description.errors %}<div class="text-danger small mt-1">{{ form.description.errors|join:', ' }}</div>{% endif %}
+                </div>
+              </div>
+            </section>
+
+            <section class="wizard-step" data-step="2">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="{{ form.injury_context.id_for_label }}" class="form-label">Context</label>
+                  {{ form.injury_context }}
+                  {% if form.injury_context.errors %}<div class="text-danger small mt-1">{{ form.injury_context.errors|join:', ' }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                  <label for="{{ form.could_keep_playing.id_for_label }}" class="form-label">Could you keep playing?</label>
+                  {{ form.could_keep_playing }}
+                  {% if form.could_keep_playing.errors %}<div class="text-danger small mt-1">{{ form.could_keep_playing.errors|join:', ' }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                  <label for="{{ form.pain_level.id_for_label }}" class="form-label">Pain level</label>
+                  {{ form.pain_level }}
+                  {% if form.pain_level.help_text %}<div class="form-text">{{ form.pain_level.help_text }}</div>{% endif %}
+                  {% if form.pain_level.errors %}<div class="text-danger small mt-1">{{ form.pain_level.errors|join:', ' }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                  <label for="{{ form.injury_nature.id_for_label }}" class="form-label">Injury nature</label>
+                  {{ form.injury_nature }}
+                  {% if form.injury_nature.errors %}<div class="text-danger small mt-1">{{ form.injury_nature.errors|join:', ' }}</div>{% endif %}
+                </div>
+                <div class="col-12">
+                  <label for="{{ form.photo.id_for_label }}" class="form-label">Photo</label>
+                  {{ form.photo }}
+                  {% if form.photo.help_text %}<div class="form-text">{{ form.photo.help_text }}</div>{% endif %}
+                  {% if form.photo.errors %}<div class="text-danger small mt-1">{{ form.photo.errors|join:', ' }}</div>{% endif %}
+                </div>
+              </div>
+            </section>
+
+            <div class="d-flex justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
+              <button type="button" class="btn btn-outline-secondary" id="wizardBackBtn">
+                <i class="bi bi-arrow-left me-1"></i>Back
+              </button>
+              <div class="d-flex gap-2">
+                <a href="{% url 'tracking:player_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="button" class="btn btn-primary" id="wizardNextBtn">
+                  Next Step<i class="bi bi-arrow-right ms-1"></i>
+                </button>
+                <button type="submit" class="btn btn-success" id="wizardSubmitBtn">
+                  <i class="bi bi-check2 me-1"></i>Submit Report
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="col-xl-4">
+      <div class="card h-100">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="bi bi-info-circle me-2"></i>What happens next</h5>
+        </div>
+        <div class="card-body">
+          <div class="wizard-note mb-3">
+            <span class="wizard-note__icon"><i class="bi bi-clipboard2-check"></i></span>
+            <div>
+              <div class="fw-semibold">Therapist review</div>
+              <p class="text-muted small mb-0">Your report is saved immediately and flagged for staff review.</p>
+            </div>
+          </div>
+          <div class="wizard-note mb-3">
+            <span class="wizard-note__icon"><i class="bi bi-bell"></i></span>
+            <div>
+              <div class="fw-semibold">Follow-up notifications</div>
+              <p class="text-muted small mb-0">You will see updates on your dashboard as the injury is reviewed.</p>
+            </div>
+          </div>
+          <div class="wizard-note">
+            <span class="wizard-note__icon"><i class="bi bi-camera"></i></span>
+            <div>
+              <div class="fw-semibold">Photo guidance</div>
+              <p class="text-muted small mb-0">Upload a clear photo only if it helps show swelling, bruising, or a visible cut.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .wizard-progress {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .wizard-progress__step {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #64748b;
+  }
+
+  .wizard-progress__step.is-active {
+    color: #0f172a;
+  }
+
+  .wizard-progress__number {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+
+  .wizard-progress__step.is-active .wizard-progress__number {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #1164da 100%);
+    color: #fff;
+  }
+
+  .wizard-progress__divider {
+    flex: 1;
+    height: 1px;
+    background: #dbe3ef;
+  }
+
+  .wizard-step[data-step="2"] {
+    display: none;
+  }
+
+  .wizard-note {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 1rem;
+    border-radius: 1rem;
+    background: #f8fafc;
+  }
+
+  .wizard-note__icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 767.98px) {
+    .wizard-progress {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .wizard-progress__divider {
+      width: 1px;
+      height: 1.5rem;
+      margin-left: 1.1rem;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    const form = document.getElementById('playerReportWizard');
+    if (!form) {
+      return;
+    }
+
+    const stepInput = document.getElementById('wizardCurrentStep');
+    const steps = Array.from(document.querySelectorAll('.wizard-step'));
+    const indicators = Array.from(document.querySelectorAll('[data-step-indicator]'));
+    const backBtn = document.getElementById('wizardBackBtn');
+    const nextBtn = document.getElementById('wizardNextBtn');
+    const submitBtn = document.getElementById('wizardSubmitBtn');
+    const stepOneFields = [
+      document.getElementById('{{ form.body_part.id_for_label }}'),
+      document.getElementById('{{ form.injury_date.id_for_label }}'),
+      document.getElementById('{{ form.description.id_for_label }}')
+    ];
+
+    let currentStep = parseInt(stepInput.value || '1', 10);
+
+    function showStep(step) {
+      currentStep = step;
+      stepInput.value = String(step);
+
+      steps.forEach((section) => {
+        section.style.display = Number(section.dataset.step) === step ? '' : 'none';
+      });
+
+      indicators.forEach((indicator) => {
+        indicator.classList.toggle('is-active', Number(indicator.dataset.stepIndicator) === step);
+      });
+
+      backBtn.style.visibility = step === 1 ? 'hidden' : 'visible';
+      nextBtn.style.display = step === 1 ? '' : 'none';
+      submitBtn.style.display = step === 2 ? '' : 'none';
+    }
+
+    function validateStepOne() {
+      let isValid = true;
+      stepOneFields.forEach((field) => {
+        if (!field) {
+          return;
+        }
+        if (!field.checkValidity()) {
+          field.reportValidity();
+          isValid = false;
+        }
+      });
+      return isValid;
+    }
+
+    nextBtn.addEventListener('click', function () {
+      if (validateStepOne()) {
+        showStep(2);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+
+    backBtn.addEventListener('click', function () {
+      showStep(1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    showStep(currentStep === 2 ? 2 : 1);
+  })();
+</script>
+{% endblock %}

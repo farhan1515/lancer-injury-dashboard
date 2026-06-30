@@ -19,7 +19,8 @@ from accounts.models import Notification
 from accounts.utils import notify
 from .forms import (
     InjuryReportForm, InjuryUpdateForm, InjuryFollowUpForm,
-    PlayerProfileForm, TeamRosterForm, InjurySearchForm, EventForm
+    PlayerProfileForm, TeamRosterForm, InjurySearchForm, EventForm,
+    PlayerSelfReportForm
 )
 from accounts.models import CustomUser, Team
 
@@ -413,9 +414,6 @@ def player_dashboard(request):
     # Notifications
     unread_notifications = Notification.objects.filter(user=user, is_read=False).count()
 
-    # Body parts for the injury-report wizard modal
-    body_parts = BodyPart.objects.all().order_by('name')
-
     # ---------- Clearance status ----------
     active_count_player = current_injuries.filter(status='ACTIVE').count()
     recovering_count_player = current_injuries.filter(status='RECOVERING').count()
@@ -494,7 +492,6 @@ def player_dashboard(request):
         'current_injuries': current_injuries,
         'upcoming_appointments': upcoming_appointments,
         'unread_notifications': unread_notifications,
-        'body_parts': body_parts,
         'clearance': clearance,
         'total_missed_games': total_missed_games,
         'total_missed_practices': total_missed_practices,
@@ -597,66 +594,55 @@ def _default_severity():
     )
 
 
+def _player_report_step(form):
+    step_one_fields = {'body_part', 'injury_date', 'description'}
+    return 1 if step_one_fields.intersection(form.errors.keys()) else 2
+
+
+@login_required
+def player_report_injury(request):
+    """Render the dedicated player injury self-report wizard."""
+    if request.user.role != 'PLAYER':
+        messages.error(request, 'Only players can self-report injuries.')
+        return redirect('dashboard')
+
+    return render(request, 'injury_tracking/player_report_injury.html', {
+        'form': PlayerSelfReportForm(),
+        'current_step': 1,
+    })
+
+
 @login_required
 def player_report_injury_submit(request):
-    """Player self-reports an injury (3-step wizard posts here at the end)."""
+    """Persist a player self-reported injury from the dedicated wizard page."""
     if request.user.role != 'PLAYER':
         messages.error(request, "Only players can self-report injuries.")
         return redirect('dashboard')
     if request.method != 'POST':
-        return redirect('tracking:player_dashboard')
+        return redirect('tracking:player_report_injury')
 
-    body_part_id = request.POST.get('body_part_id')
-    body_part_name = (request.POST.get('body_part_name') or '').strip()
-    injury_date_str = request.POST.get('injury_date')
-    description = (request.POST.get('description') or '').strip()
-    context_type = request.POST.get('context_type', 'Other')
-    # contact_type: 'CONTACT', 'NON_CONTACT', or '' (Not Sure -> blank, therapist fills later)
-    contact_type = (request.POST.get('contact_type') or '').strip()
+    form = PlayerSelfReportForm(request.POST, request.FILES)
+    if not form.is_valid():
+        return render(request, 'injury_tracking/player_report_injury.html', {
+            'form': form,
+            'current_step': _player_report_step(form),
+        })
 
-    # Resolve body part: prefer explicit id, fall back to name match (from SVG click).
-    body_part = None
-    if body_part_id:
-        body_part = BodyPart.objects.filter(id=body_part_id).first()
-    if not body_part and body_part_name:
-        body_part = BodyPart.objects.filter(name__iexact=body_part_name).first()
-        if not body_part:
-            body_part = BodyPart.objects.create(name=body_part_name)
-
-    if not body_part or not injury_date_str or not description:
-        messages.error(request, "Please complete all required fields before submitting.")
-        return redirect('tracking:player_dashboard')
-
-    try:
-        injury_date = datetime.strptime(injury_date_str, '%Y-%m-%d').date()
-    except (ValueError, TypeError):
-        messages.error(request, "Invalid injury date.")
-        return redirect('tracking:player_dashboard')
-
-    # Only set contact_type when player explicitly chose Contact/Non-Contact.
-    # 'Not Sure' (blank) leaves the model default in place for the therapist to set.
-    extra_kwargs = {}
-    if contact_type in ('CONTACT', 'NON_CONTACT'):
-        extra_kwargs['contact_type'] = contact_type
-
-    InjuryRecord.objects.create(
+    injury = InjuryRecord.objects.create(
         player=request.user,
         reported_by=request.user,
-        injury_date=injury_date,
         injury_type=_default_injury_type(),
-        body_part=body_part,
         severity=_default_severity(),
         status='ACTIVE',
-        description=f"{description}\n\nContext: {context_type}",
         treatment='REST',
         self_reported=True,
-        **extra_kwargs,
+        **form.cleaned_data,
     )
     messages.success(
         request,
         'Injury reported successfully. A therapist will review your report shortly.',
     )
-    return redirect('tracking:player_dashboard')
+    return redirect('tracking:injury_detail', pk=injury.pk)
 
 
 @login_required

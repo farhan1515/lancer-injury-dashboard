@@ -21,7 +21,8 @@ urlpatterns = [
     path('analytics/', views.analytics_dashboard, name='analytics'),
 
     # Player self-service flows
-    path('player/report-injury/', views.player_report_injury_submit, name='player_report_injury_submit'),
+    path('player/report-injury/', views.player_report_injury, name='player_report_injury'),
+    path('player/report-injury/submit/', views.player_report_injury_submit, name='player_report_injury_submit'),
     path('player/request-appointment/', views.player_request_appointment_submit, name='player_request_appointment_submit'),
 
     # Doctor / Coach inboxes

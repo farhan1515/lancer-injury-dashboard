@@ -93,6 +93,45 @@
         </div>
       </div>
 
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0">
+            <i class="bi bi-clipboard2-pulse me-2"></i>Player Self-Report Details
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-4">
+            <div class="col-md-6">
+              <p><strong>Context:</strong> {{ injury.get_injury_context_display|default:"Not provided" }}</p>
+              <p><strong>Could Keep Playing:</strong> {{ injury.get_could_keep_playing_display|default:"Not provided" }}</p>
+              <p><strong>Pain Level:</strong>
+                {% if injury.pain_level is not None %}
+                  {{ injury.pain_level }}/10
+                {% else %}
+                  Not provided
+                {% endif %}
+              </p>
+              <p class="mb-0"><strong>Nature:</strong> {{ injury.get_injury_nature_display|default:"Not provided" }}</p>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-muted">Uploaded Photo</h6>
+              {% if injury.photo %}
+                <a href="{{ injury.photo.url }}" target="_blank" rel="noopener noreferrer" class="d-inline-block text-decoration-none">
+                  <img src="{{ injury.photo.url }}" alt="Injury photo" class="img-fluid rounded border mb-2" style="max-height: 280px; object-fit: cover;">
+                </a>
+                <div>
+                  <a href="{{ injury.photo.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-arrows-fullscreen me-1"></i>Open Full Size
+                  </a>
+                </div>
+              {% else %}
+                <p class="text-muted mb-0">No photo uploaded.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Treatment Information -->
       <div class="card mb-4">
         <div class="card-header">

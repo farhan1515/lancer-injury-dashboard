@@ -34,10 +34,9 @@
             <a href="{% url 'player_calendar' %}" class="btn btn-outline-primary">
               <i class="bi bi-calendar3 me-1"></i>Calendar
             </a>
-            <button type="button" class="btn btn-primary"
-                    data-bs-toggle="modal" data-bs-target="#reportInjuryModal">
-              <i class="bi bi-plus-circle me-1"></i>Report Injury
-            </button>
+            <a href="{% url 'tracking:player_report_injury' %}" class="btn btn-primary">
+              <i class="bi bi-plus-circle me-1"></i>Report an Injury
+            </a>
             <div class="dropdown" id="bellWrap">
               <button type="button" class="btn btn-outline-secondary position-relative"
                       id="bellDesktop" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
@@ -209,10 +208,9 @@
           {% endif %}
         </div>
         <div class="card-footer bg-transparent">
-          <button type="button" class="btn btn-primary w-100"
-                  data-bs-toggle="modal" data-bs-target="#reportInjuryModal">
-            <i class="bi bi-plus-circle me-1"></i>Report New Injury
-          </button>
+          <a href="{% url 'tracking:player_report_injury' %}" class="btn btn-primary w-100">
+            <i class="bi bi-plus-circle me-1"></i>Report an Injury
+          </a>
         </div>
       </div>
     </div>
@@ -279,169 +277,6 @@
 
 </div>
 
-
-{# ============ REPORT INJURY MODAL ============ #}
-
-<div class="modal fade" id="reportInjuryModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-md-down">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">
-          <i class="bi bi-plus-circle me-2"></i>Report an Injury
-          <small class="text-muted ms-2" id="ri-stepLabel">Step 1 of 3 — Where</small>
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <form method="post" action="{% url 'tracking:player_report_injury_submit' %}" id="reportInjuryForm">
-        {% csrf_token %}
-        <input type="hidden" name="body_part_id" id="ri-bodyPartId">
-        <input type="hidden" name="body_part_name" id="ri-bodyPartName">
-        <div class="modal-body">
-
-          {# ----- STEP 1 ----- #}
-          <div class="ri-step" data-ri-step="1">
-            <p class="text-muted small mb-2">Tap the area on the body where you're hurt.</p>
-            <div class="svg-wrap mb-2">
-              <svg id="riBodySVG" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 600" style="width:100%;height:auto;display:block;background:#fff;border-radius:10px;">
-                <text x="125" y="20" font-size="10" fill="#64748b" text-anchor="middle" font-family="Arial">FRONT</text>
-                <text x="375" y="20" font-size="10" fill="#64748b" text-anchor="middle" font-family="Arial">BACK</text>
-                <g>
-                  <ellipse class="ri-region" data-part="Head" cx="125" cy="54" rx="15" ry="19"/>
-                  <path class="ri-region" data-part="Neck" d="M118 73 L132 73 L136 92 L114 92 Z"/>
-                  <path class="ri-region" data-part="Shoulder" d="M92 98 C84 101 78 108 78 116 C78 125 86 131 95 129 C104 127 109 119 108 111 C107 103 101 97 92 98 Z"/>
-                  <path class="ri-region" data-part="Shoulder" d="M158 98 C166 101 172 108 172 116 C172 125 164 131 155 129 C146 127 141 119 142 111 C143 103 149 97 158 98 Z"/>
-                  <path class="ri-region" data-part="Chest" d="M102 102 C112 100 119 103 123 111 L123 144 C115 146 108 146 101 143 C96 136 93 128 93 119 C93 111 96 105 102 102 Z"/>
-                  <path class="ri-region" data-part="Chest" d="M148 102 C138 100 131 103 127 111 L127 144 C135 146 142 146 149 143 C154 136 157 128 157 119 C157 111 154 105 148 102 Z"/>
-                  <path class="ri-region" data-part="Abdomen" d="M108 149 L142 149 L143 213 L107 213 Z"/>
-                  <path class="ri-region" data-part="Upper Arm" d="M82 129 C75 148 75 170 80 191 C85 196 91 197 96 192 C99 171 98 149 94 129 Z"/>
-                  <path class="ri-region" data-part="Upper Arm" d="M168 129 C175 148 175 170 170 191 C165 196 159 197 154 192 C151 171 152 149 156 129 Z"/>
-                  <path class="ri-region" data-part="Forearm" d="M80 194 C72 214 72 236 77 256 C82 261 89 261 93 256 C95 235 92 214 88 194 Z"/>
-                  <path class="ri-region" data-part="Forearm" d="M170 194 C178 214 178 236 173 256 C168 261 161 261 157 256 C155 235 158 214 162 194 Z"/>
-                  <path class="ri-region" data-part="Hip" d="M104 221 C110 218 116 217 122 220 L120 246 C114 248 108 248 102 244 Z"/>
-                  <path class="ri-region" data-part="Hip" d="M146 221 C140 218 134 217 128 220 L130 246 C136 248 142 248 148 244 Z"/>
-                  <path class="ri-region" data-part="Thigh" d="M102 247 C112 245 118 247 122 252 C124 286 121 319 117 349 C112 353 107 353 102 349 C98 320 97 286 102 247 Z"/>
-                  <path class="ri-region" data-part="Thigh" d="M148 247 C138 245 132 247 128 252 C126 286 129 319 133 349 C138 353 143 353 148 349 C152 320 153 286 148 247 Z"/>
-                  <ellipse class="ri-region" data-part="Knee" cx="110" cy="360" rx="8" ry="7"/>
-                  <ellipse class="ri-region" data-part="Knee" cx="140" cy="360" rx="8" ry="7"/>
-                  <path class="ri-region" data-part="Lower Leg" d="M102 369 C110 366 115 367 118 372 C120 401 118 431 114 462 C109 466 104 466 99 462 C96 432 95 401 102 369 Z"/>
-                  <path class="ri-region" data-part="Lower Leg" d="M148 369 C140 366 135 367 132 372 C130 401 132 431 136 462 C141 466 146 466 151 462 C154 432 155 401 148 369 Z"/>
-                  <ellipse class="ri-region" data-part="Ankle" cx="106" cy="471" rx="6" ry="5"/>
-                  <ellipse class="ri-region" data-part="Ankle" cx="144" cy="471" rx="6" ry="5"/>
-                  <path class="ri-region" data-part="Foot" d="M98 478 C104 477 111 478 118 483 C117 488 109 491 99 491 C93 491 89 488 88 484 C90 481 94 479 98 478 Z"/>
-                  <path class="ri-region" data-part="Foot" d="M152 478 C146 477 139 478 132 483 C133 488 141 491 151 491 C157 491 161 488 162 484 C160 481 156 479 152 478 Z"/>
-                </g>
-                <g>
-                  <ellipse class="ri-region" data-part="Head" cx="375" cy="54" rx="15" ry="19"/>
-                  <path class="ri-region" data-part="Neck" d="M368 73 L382 73 L386 92 L364 92 Z"/>
-                  <path class="ri-region" data-part="Shoulder" d="M342 98 C334 101 328 108 328 116 C328 125 336 131 345 129 C354 127 359 119 358 111 C357 103 351 97 342 98 Z"/>
-                  <path class="ri-region" data-part="Shoulder" d="M408 98 C416 101 422 108 422 116 C422 125 414 131 405 129 C396 127 391 119 392 111 C393 103 399 97 408 98 Z"/>
-                  <path class="ri-region" data-part="Upper Back" d="M353 100 L397 100 L402 220 L348 220 Z"/>
-                  <path class="ri-region" data-part="Lower Back" d="M355 225 L395 225 L393 266 L357 266 Z"/>
-                  <path class="ri-region" data-part="Upper Arm" d="M332 129 C325 148 325 170 330 191 C335 196 341 197 346 192 C349 171 348 149 344 129 Z"/>
-                  <path class="ri-region" data-part="Upper Arm" d="M418 129 C425 148 425 170 420 191 C415 196 409 197 404 192 C401 171 402 149 406 129 Z"/>
-                  <path class="ri-region" data-part="Forearm" d="M330 194 C322 214 322 236 327 256 C332 261 339 261 343 256 C345 235 342 214 338 194 Z"/>
-                  <path class="ri-region" data-part="Forearm" d="M420 194 C428 214 428 236 423 256 C418 261 411 261 407 256 C405 235 408 214 412 194 Z"/>
-                  <path class="ri-region" data-part="Thigh" d="M349 307 C359 304 366 306 371 311 C373 346 370 378 365 408 C360 412 355 412 350 408 C346 378 345 346 349 307 Z"/>
-                  <path class="ri-region" data-part="Thigh" d="M401 307 C391 304 384 306 379 311 C377 346 380 378 385 408 C390 412 395 412 400 408 C404 378 405 346 401 307 Z"/>
-                  <path class="ri-region" data-part="Lower Leg" d="M350 413 C358 408 364 409 367 416 C371 438 369 454 364 478 C359 482 353 482 348 478 C344 454 345 438 350 413 Z"/>
-                  <path class="ri-region" data-part="Lower Leg" d="M400 413 C392 408 386 409 383 416 C379 438 381 454 386 478 C391 482 397 482 402 478 C406 454 405 438 400 413 Z"/>
-                </g>
-              </svg>
-            </div>
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="small text-muted">Selected:</span>
-              <span class="badge bg-primary fs-6" id="ri-selectedBadge">None</span>
-            </div>
-            <hr class="my-3">
-            <label class="form-label small text-muted">Not shown above? Specify manually:</label>
-            <select class="form-select" id="ri-bodyPartManual">
-              <option value="">—</option>
-              {% for bp in body_parts %}
-                <option value="{{ bp.id }}" data-name="{{ bp.name }}">{{ bp.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          {# ----- STEP 2 ----- #}
-          <div class="ri-step" data-ri-step="2" style="display:none;">
-            <div class="mb-3">
-              <label class="form-label">Date of injury</label>
-              <input type="date" class="form-control" name="injury_date" id="ri-injuryDate" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">What happened?</label>
-              <textarea class="form-control" name="description" id="ri-description" rows="4"
-                        maxlength="500" placeholder="Describe what happened..." required></textarea>
-              <small class="text-muted"><span id="ri-charCount">0</span> / 500</small>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Context</label>
-              <div class="btn-group w-100" role="group">
-                <input type="radio" class="btn-check" name="context_type" id="ri-ctx-practice" value="Practice" autocomplete="off" checked>
-                <label class="btn btn-outline-primary" for="ri-ctx-practice">Practice</label>
-                <input type="radio" class="btn-check" name="context_type" id="ri-ctx-game" value="Game" autocomplete="off">
-                <label class="btn btn-outline-primary" for="ri-ctx-game">Game</label>
-                <input type="radio" class="btn-check" name="context_type" id="ri-ctx-other" value="Other" autocomplete="off">
-                <label class="btn btn-outline-primary" for="ri-ctx-other">Other</label>
-              </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">How did the injury occur?</label>
-              <div class="btn-group w-100" role="group">
-                <input type="radio" class="btn-check" name="contact_type" id="ri-contact-yes" value="CONTACT" autocomplete="off">
-                <label class="btn btn-outline-primary" for="ri-contact-yes">Contact</label>
-                <input type="radio" class="btn-check" name="contact_type" id="ri-contact-no" value="NON_CONTACT" autocomplete="off">
-                <label class="btn btn-outline-primary" for="ri-contact-no">Non-Contact</label>
-                <input type="radio" class="btn-check" name="contact_type" id="ri-contact-unsure" value="" autocomplete="off" checked>
-                <label class="btn btn-outline-primary" for="ri-contact-unsure">Not Sure</label>
-              </div>
-              <small class="text-muted d-block mt-1">
-                Not sure? Your therapist will confirm this during review.
-              </small>
-            </div>
-          </div>
-
-          {# ----- STEP 3 ----- #}
-          <div class="ri-step" data-ri-step="3" style="display:none;">
-            <h6 class="mb-3">Review your report</h6>
-            <div class="card bg-light">
-              <div class="card-body">
-                <dl class="row mb-0 small">
-                  <dt class="col-sm-4 text-muted">Body part</dt>
-                  <dd class="col-sm-8" id="ri-review-bodyPart">—</dd>
-                  <dt class="col-sm-4 text-muted">Date</dt>
-                  <dd class="col-sm-8" id="ri-review-date">—</dd>
-                  <dt class="col-sm-4 text-muted">Context</dt>
-                  <dd class="col-sm-8" id="ri-review-context">—</dd>
-                  <dt class="col-sm-4 text-muted">How it occurred</dt>
-                  <dd class="col-sm-8" id="ri-review-contact">—</dd>
-                  <dt class="col-sm-4 text-muted">Description</dt>
-                  <dd class="col-sm-8" id="ri-review-description">—</dd>
-                </dl>
-              </div>
-            </div>
-            <p class="text-muted small mt-3 mb-0">
-              <i class="bi bi-info-circle me-1"></i>
-              A therapist will review your report shortly and update the injury record with full details.
-            </p>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" id="ri-prevBtn" style="display:none;">
-            <i class="bi bi-arrow-left me-1"></i>Back
-          </button>
-          <button type="button" class="btn btn-primary" id="ri-nextBtn" disabled>
-            Next <i class="bi bi-arrow-right ms-1"></i>
-          </button>
-          <button type="submit" class="btn btn-success" id="ri-submitBtn" style="display:none;">
-            <i class="bi bi-check2 me-1"></i>Submit Report
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
 {# ============ REQUEST APPOINTMENT MODAL ============ #}
 <div class="modal fade" id="requestAppointmentModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-fullscreen-md-down">
@@ -481,149 +316,6 @@
     </div>
   </div>
 </div>
-
-<style>
-  .ri-region {
-    fill:#c8d0e0; stroke:#8896b0; stroke-width:1; cursor:pointer;
-    transition: fill 0.15s, filter 0.15s, stroke 0.15s;
-  }
-  .ri-region:hover {
-    filter: brightness(1.15) drop-shadow(0 0 4px rgba(11,118,239,0.5));
-  }
-  .ri-region.sel {
-    fill: #0b76ef; stroke:#0b76ef; stroke-width:2;
-    filter: drop-shadow(0 0 6px rgba(11,118,239,0.8));
-  }
-  .svg-wrap { background:#fff; border-radius:10px; padding:10px; }
-</style>
-
-<script>
-  (function() {
-    // ---- Report Injury wizard ----
-    const form = document.getElementById('reportInjuryForm');
-    if (!form) return;
-    let step = 1;
-    let selectedPart = null;       // human-readable name
-    let selectedPartId = null;     // DB id when chosen via manual dropdown
-
-    const stepLabel = document.getElementById('ri-stepLabel');
-    const stepNames = ['', 'Where', 'What happened', 'Review'];
-    const prevBtn = document.getElementById('ri-prevBtn');
-    const nextBtn = document.getElementById('ri-nextBtn');
-    const submitBtn = document.getElementById('ri-submitBtn');
-    const selectedBadge = document.getElementById('ri-selectedBadge');
-    const manualSel = document.getElementById('ri-bodyPartManual');
-    const dateInput = document.getElementById('ri-injuryDate');
-    const desc = document.getElementById('ri-description');
-    const charCount = document.getElementById('ri-charCount');
-
-    function showStep(n) {
-      step = n;
-      document.querySelectorAll('.ri-step').forEach(el => {
-        el.style.display = (parseInt(el.dataset.riStep) === n) ? '' : 'none';
-      });
-      stepLabel.textContent = `Step ${n} of 3 — ${stepNames[n]}`;
-      prevBtn.style.display = n > 1 ? '' : 'none';
-      nextBtn.style.display = n < 3 ? '' : 'none';
-      submitBtn.style.display = n === 3 ? '' : 'none';
-      updateNextEnabled();
-      if (n === 3) populateReview();
-    }
-
-    function updateNextEnabled() {
-      if (step === 1) {
-        nextBtn.disabled = !selectedPart;
-      } else if (step === 2) {
-        nextBtn.disabled = !(dateInput.value && desc.value.trim());
-      } else {
-        nextBtn.disabled = false;
-      }
-    }
-
-    function setSelected(name, id) {
-      selectedPart = name || null;
-      selectedPartId = id || null;
-      selectedBadge.textContent = selectedPart || 'None';
-      selectedBadge.className = selectedPart ? 'badge bg-primary fs-6' : 'badge bg-secondary fs-6';
-      document.getElementById('ri-bodyPartName').value = selectedPart || '';
-      document.getElementById('ri-bodyPartId').value = selectedPartId || '';
-      // Reflect in SVG
-      document.querySelectorAll('.ri-region').forEach(el => {
-        el.classList.toggle('sel', el.dataset.part === selectedPart);
-      });
-      updateNextEnabled();
-    }
-
-    // SVG click
-    document.querySelectorAll('.ri-region').forEach(el => {
-      el.addEventListener('click', () => {
-        manualSel.value = '';
-        setSelected(el.dataset.part, null);
-      });
-    });
-
-    // Manual dropdown
-    manualSel.addEventListener('change', (e) => {
-      const opt = e.target.selectedOptions[0];
-      if (!opt || !opt.value) {
-        setSelected(null, null);
-      } else {
-        setSelected(opt.dataset.name, opt.value);
-      }
-    });
-
-    // Step 2 inputs
-    // Default today
-    const today = new Date();
-    const yyyy = today.getFullYear(), mm = String(today.getMonth()+1).padStart(2,'0'),
-          dd = String(today.getDate()).padStart(2,'0');
-    dateInput.max = `${yyyy}-${mm}-${dd}`;
-    dateInput.value = `${yyyy}-${mm}-${dd}`;
-    dateInput.addEventListener('change', updateNextEnabled);
-    desc.addEventListener('input', () => {
-      charCount.textContent = desc.value.length;
-      updateNextEnabled();
-    });
-
-    function populateReview() {
-      document.getElementById('ri-review-bodyPart').textContent = selectedPart || '—';
-      document.getElementById('ri-review-date').textContent = dateInput.value;
-      const ctx = form.querySelector('input[name="context_type"]:checked');
-      document.getElementById('ri-review-context').textContent = ctx ? ctx.value : '—';
-      const contact = form.querySelector('input[name="contact_type"]:checked');
-      const contactLabel = !contact || !contact.value
-        ? 'Not Sure'
-        : (contact.value === 'CONTACT' ? 'Contact' : 'Non-Contact');
-      document.getElementById('ri-review-contact').textContent = contactLabel;
-      document.getElementById('ri-review-description').textContent = desc.value || '—';
-    }
-
-    nextBtn.addEventListener('click', () => { if (step < 3) showStep(step + 1); });
-    prevBtn.addEventListener('click', () => { if (step > 1) showStep(step - 1); });
-
-    // Reset modal state when shown / hidden
-    const modalEl = document.getElementById('reportInjuryModal');
-    modalEl.addEventListener('show.bs.modal', () => {
-      setSelected(null, null);
-      manualSel.value = '';
-      desc.value = '';
-      charCount.textContent = '0';
-      dateInput.value = `${yyyy}-${mm}-${dd}`;
-      const firstCtx = form.querySelector('#ri-ctx-practice');
-      if (firstCtx) firstCtx.checked = true;
-      const defaultContact = form.querySelector('#ri-contact-unsure');
-      if (defaultContact) defaultContact.checked = true;
-      showStep(1);
-    });
-
-    // ---- Request Appointment: min date = today ----
-    const raDate = document.getElementById('ra-date');
-    if (raDate) {
-      raDate.min = `${yyyy}-${mm}-${dd}`;
-      raDate.value = `${yyyy}-${mm}-${dd}`;
-    }
-  })();
-</script>
 
 {# ============ MOBILE BOTTOM NAV ============ #}
 <nav class="mobile-bottom-nav d-md-none" aria-label="Player navigation">
@@ -679,6 +371,17 @@
 
 <script>
   (function() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+
+    const raDate = document.getElementById('ra-date');
+    if (raDate) {
+      raDate.min = `${yyyy}-${mm}-${dd}`;
+      raDate.value = `${yyyy}-${mm}-${dd}`;
+    }
+
     // ---- Notification bell ----
     const bellWrap = document.getElementById('bellWrap');
     if (bellWrap) {
@@ -743,10 +446,6 @@
         });
       }
     }
-
-    document.querySelectorAll('.mbn-btn').forEach(btn => {
-      btn.addEventListener('click', () => switchTab(btn.dataset.target));
-    });
   })();
 </script>
 {% endblock %}

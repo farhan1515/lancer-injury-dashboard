@@ -9,6 +9,7 @@ Everything else is unchanged from Team 13.
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from .models import (
     InjuryRecord, InjuryType, BodyPart, InjurySeverity,
     InjuryFollowUp, TeamRoster, Event
@@ -151,6 +152,69 @@ class InjuryReportForm(forms.ModelForm):
 
         self.fields['player'].queryset = player_queryset
         # ───────────────────────────────────────────────────────────────────
+
+
+class PlayerSelfReportForm(forms.ModelForm):
+    """Guided player self-report form for the dedicated injury wizard page."""
+
+    class Meta:
+        model = InjuryRecord
+        fields = [
+            'body_part',
+            'injury_date',
+            'description',
+            'injury_context',
+            'could_keep_playing',
+            'pain_level',
+            'injury_nature',
+            'photo',
+        ]
+        widgets = {
+            'body_part': forms.Select(attrs={'class': 'form-select'}),
+            'injury_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'description': forms.Textarea(
+                attrs={
+                    'rows': 5,
+                    'class': 'form-control',
+                    'placeholder': 'Describe what happened, where it hurts, and what you felt right away.',
+                }
+            ),
+            'injury_context': forms.Select(attrs={'class': 'form-select'}),
+            'could_keep_playing': forms.Select(attrs={'class': 'form-select'}),
+            'pain_level': forms.NumberInput(
+                attrs={
+                    'class': 'form-control',
+                    'min': 0,
+                    'max': 10,
+                    'placeholder': '0-10',
+                }
+            ),
+            'injury_nature': forms.Select(attrs={'class': 'form-select'}),
+            'photo': forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['body_part'].queryset = BodyPart.objects.order_by('name')
+        self.fields['body_part'].empty_label = 'Select body part'
+        self.fields['injury_context'].required = True
+        self.fields['could_keep_playing'].required = True
+        self.fields['pain_level'].required = True
+        self.fields['injury_nature'].required = True
+        self.fields['photo'].required = False
+        self.fields['injury_context'].choices = [('', 'Select context')] + list(self.fields['injury_context'].choices)
+        self.fields['could_keep_playing'].choices = [('', 'Select one')] + list(self.fields['could_keep_playing'].choices)
+        self.fields['injury_nature'].choices = [('', 'Select injury nature')] + list(self.fields['injury_nature'].choices)
+
+        self.fields['description'].help_text = 'Keep it brief and factual so the therapist can triage it quickly.'
+        self.fields['pain_level'].help_text = '0 means no pain. 10 means worst pain.'
+        self.fields['photo'].help_text = 'Optional. Upload a clear photo if swelling, bruising, or a cut is visible.'
+
+    def clean_injury_date(self):
+        injury_date = self.cleaned_data['injury_date']
+        if injury_date > timezone.now().date():
+            raise forms.ValidationError('Injury date cannot be in the future.')
+        return injury_date
 
 
 class InjuryUpdateForm(forms.ModelForm):
