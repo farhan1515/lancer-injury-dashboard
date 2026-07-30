@@ -3,12 +3,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib import messages
 from django.db.models import Q, Count, Avg
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django.urls import reverse_lazy
 from django.core.paginator import Paginator
 from django.utils import timezone
 from datetime import datetime, timedelta
+import csv
 import json
 
 from .models import (
@@ -414,54 +415,107 @@ def player_dashboard(request):
     return render(request, 'accounts/player_dashboard.html', context)
 
 # Injury Management Views
+def get_filtered_injuries(user, get_params):
+    """
+    Shared helper that applies role-based access control and search-form
+    filtering to the InjuryRecord queryset. Used by both InjuryListView
+    and the CSV export view so the two stay in sync.
+
+    Per project convention (see README "Data Preservation"), this never
+    excludes injuries by status on its own - only the explicit 'status'
+    search filter (if provided) narrows by status.
+    """
+    queryset = InjuryRecord.objects.select_related(
+        'player', 'injury_type', 'body_part', 'severity', 'reported_by'
+    ).order_by('-injury_date')
+
+    # Apply role-based filtering
+    if user.role == 'PLAYER':
+        queryset = queryset.filter(player=user)
+    elif user.role == 'COACH' and user.team:
+        queryset = queryset.filter(player__team=user.team)
+    elif user.role == 'DOCTOR':
+        # Doctors can see all injuries
+        pass
+    elif user.role != 'ADMIN':
+        queryset = queryset.none()
+
+    # Apply search filters
+    search_form = InjurySearchForm(get_params)
+    if search_form.is_valid():
+        if search_form.cleaned_data.get('player'):
+            queryset = queryset.filter(player=search_form.cleaned_data['player'])
+        if search_form.cleaned_data.get('injury_type'):
+            queryset = queryset.filter(injury_type=search_form.cleaned_data['injury_type'])
+        if search_form.cleaned_data.get('body_part'):
+            queryset = queryset.filter(body_part=search_form.cleaned_data['body_part'])
+        if search_form.cleaned_data.get('severity'):
+            queryset = queryset.filter(severity=search_form.cleaned_data['severity'])
+        if search_form.cleaned_data.get('status'):
+            queryset = queryset.filter(status=search_form.cleaned_data['status'])
+        if search_form.cleaned_data.get('date_from'):
+            queryset = queryset.filter(injury_date__gte=search_form.cleaned_data['date_from'])
+        if search_form.cleaned_data.get('date_to'):
+            queryset = queryset.filter(injury_date__lte=search_form.cleaned_data['date_to'])
+
+    return queryset
+
+
 class InjuryListView(LoginRequiredMixin, ListView):
     """List view for injuries with filtering"""
     model = InjuryRecord
     template_name = 'injury_tracking/injury_list.html'
     context_object_name = 'injuries'
     paginate_by = 20
-    
+
     def get_queryset(self):
-        queryset = InjuryRecord.objects.select_related(
-            'player', 'injury_type', 'body_part', 'severity', 'reported_by'
-        ).order_by('-injury_date')
-        
-        # Apply role-based filtering
-        user = self.request.user
-        if user.role == 'PLAYER':
-            queryset = queryset.filter(player=user)
-        elif user.role == 'COACH' and user.team:
-            queryset = queryset.filter(player__team=user.team)
-        elif user.role == 'DOCTOR':
-            # Doctors can see all injuries
-            pass
-        elif user.role != 'ADMIN':
-            queryset = queryset.none()
-        
-        # Apply search filters
-        search_form = InjurySearchForm(self.request.GET)
-        if search_form.is_valid():
-            if search_form.cleaned_data.get('player'):
-                queryset = queryset.filter(player=search_form.cleaned_data['player'])
-            if search_form.cleaned_data.get('injury_type'):
-                queryset = queryset.filter(injury_type=search_form.cleaned_data['injury_type'])
-            if search_form.cleaned_data.get('body_part'):
-                queryset = queryset.filter(body_part=search_form.cleaned_data['body_part'])
-            if search_form.cleaned_data.get('severity'):
-                queryset = queryset.filter(severity=search_form.cleaned_data['severity'])
-            if search_form.cleaned_data.get('status'):
-                queryset = queryset.filter(status=search_form.cleaned_data['status'])
-            if search_form.cleaned_data.get('date_from'):
-                queryset = queryset.filter(injury_date__gte=search_form.cleaned_data['date_from'])
-            if search_form.cleaned_data.get('date_to'):
-                queryset = queryset.filter(injury_date__lte=search_form.cleaned_data['date_to'])
-        
-        return queryset
-    
+        return get_filtered_injuries(self.request.user, self.request.GET)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['search_form'] = InjurySearchForm(self.request.GET)
         return context
+
+
+@login_required
+def export_injuries_csv(request):
+    """
+    Export the currently filtered/visible injury list as a CSV file.
+
+    Reuses get_filtered_injuries() so the export always matches exactly
+    what the user can see and has filtered for on the injury list page,
+    including recovered/chronic injuries per the project's data
+    preservation policy.
+    """
+    injuries = get_filtered_injuries(request.user, request.GET)
+
+    response = HttpResponse(content_type='text/csv')
+    filename = f"injury_export_{timezone.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'Player', 'Team', 'Injury Type', 'Body Part', 'Severity',
+        'Status', 'Injury Date', 'Estimated Recovery Date',
+        'Actual Recovery Date', 'Reported By', 'Notes',
+    ])
+
+    for injury in injuries:
+        writer.writerow([
+            injury.player.get_full_name() if injury.player else '',
+            getattr(injury.player, 'team', '') or '',
+            injury.injury_type.name if injury.injury_type else '',
+            injury.body_part.name if injury.body_part else '',
+            injury.severity.name if injury.severity else '',
+            injury.get_status_display() if hasattr(injury, 'get_status_display') else injury.status,
+            injury.injury_date,
+            getattr(injury, 'estimated_recovery_date', ''),
+            getattr(injury, 'actual_recovery_date', '') or '',
+            injury.reported_by.get_full_name() if injury.reported_by else '',
+            getattr(injury, 'notes', '') or '',
+        ])
+
+    return response
 
 class InjuryDetailView(LoginRequiredMixin, DetailView):
     """Detail view for individual injuries"""

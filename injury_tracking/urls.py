@@ -13,6 +13,7 @@ urlpatterns = [
     
     # Injury management
     path('injuries/', views.InjuryListView.as_view(), name='injury_list'),
+    path('injuries/export/', views.export_injuries_csv, name='export_injuries_csv'),
     path('injuries/<int:pk>/', views.InjuryDetailView.as_view(), name='injury_detail'),
     path('injuries/create/', views.InjuryCreateView.as_view(), name='injury_create'),
     path('injuries/<int:pk>/update/', views.InjuryUpdateView.as_view(), name='injury_update'),

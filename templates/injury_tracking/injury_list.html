@@ -266,13 +266,11 @@
 {% block scripts %}
 <script>
   function exportData() {
-    // Get current search parameters
+    // Carry over the current search/filter params so the export
+    // matches exactly what's shown on screen.
     const params = new URLSearchParams(window.location.search);
-    params.set('export', 'csv');
-    
-    // Create download link
-    const exportUrl = `${window.location.pathname}?${params.toString()}`;
-    window.open(exportUrl, '_blank');
+    const exportUrl = `{% url 'tracking:export_injuries_csv' %}?${params.toString()}`;
+    window.location.href = exportUrl;
   }
 
   function getCookie(name) {
